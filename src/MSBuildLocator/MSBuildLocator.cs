@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.Build.Shared;
 
-namespace MSBuildLocator
+namespace Microsoft.Build.MSBuildLocator
 {
     public static class MSBuildLocator
     {

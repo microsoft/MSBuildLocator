@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26817.0
+VisualStudioVersion = 15.0.26730.8
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MSBuildLocator", "src\MSBuildLocator\MSBuildLocator.csproj", "{2F4700C6-A6F6-49DF-ABF1-6213AAC4BCFD}"
 EndProject

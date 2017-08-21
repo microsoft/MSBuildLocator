@@ -3,12 +3,13 @@ using System.IO;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Framework;
+using Microsoft.Build.MSBuildLocator;
 
 namespace BuilderApp
 {
     internal class Program
     {
-        private static readonly string s_msBuildPath = MSBuildLocator.MSBuildLocator.LoadDefaults();
+        private static readonly string s_msBuildPath = MSBuildLocator.LoadDefaults();
 
         private static void Main(string[] args)
         {

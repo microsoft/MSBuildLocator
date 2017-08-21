@@ -4,6 +4,10 @@
     <OutputType>Library</OutputType>
     <TargetFramework>net4.6</TargetFramework>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <AssemblyName>Microsoft.Build.MSBuildLocator</AssemblyName>
+    <RootNamespace>Microsoft.Build.MSBuildLocator</RootNamespace>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
