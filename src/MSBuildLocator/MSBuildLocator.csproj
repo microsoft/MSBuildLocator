@@ -9,6 +9,9 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
     <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
+
+    <Title>MSBuild Locator</Title>
+    <Description>Package that assists in locating and using an installed version of MSBuild 15.</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='net46'">

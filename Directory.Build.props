@@ -1,5 +1,15 @@
 <Project>
 
+  <PropertyGroup>
+    <Authors>Microsoft</Authors>
+    <Copyright>Copyright © Microsoft Corporation</Copyright>
+    <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=825694</PackageIconUrl>
+    <PackageLicenseUrl>http://go.microsoft.com/fwlink/?LinkId=329770</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/Microsoft/MSBuildLocator</PackageProjectUrl>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <Tags>MSBuild</Tags>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Nerdbank.GitVersioning" Version="1.6.35" PrivateAssets="all" />
   </ItemGroup>
