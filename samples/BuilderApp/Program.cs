@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.IO;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
@@ -9,14 +12,20 @@ namespace BuilderApp
 {
     internal class Program
     {
-        private static readonly string s_msBuildPath = MSBuildLocator.LoadDefaults();
+        static Program()
+        {
+            var instanceUsed = MSBuildLocator.RegisterDefaults();
+
+            // For display purposes
+            Console.WriteLine($"Using VS Instance: {instanceUsed.Name} - {instanceUsed.Version}");
+            foreach (var instance in MSBuildLocator.Instances)
+                Console.WriteLine($"  Discovered VS Instance: {instance.Name} - {instance.Version}");
+        }
 
         private static void Main(string[] args)
         {
             if (args.Length < 1 || !File.Exists(args[0])) Usage();
-
             var projectFilePath = args[0];
-            Console.WriteLine($"Building {projectFilePath} with MSBuild from {s_msBuildPath}.");
 
             var pre = ProjectRootElement.Open(projectFilePath);
             var project = new Project(pre);

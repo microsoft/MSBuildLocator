@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net4.6</TargetFramework>
+    <TargetFramework>net46</TargetFramework>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <AssemblyName>Microsoft.Build.MSBuildLocator</AssemblyName>
     <RootNamespace>Microsoft.Build.MSBuildLocator</RootNamespace>
@@ -10,17 +10,13 @@
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
-  <ItemGroup>
+  <PropertyGroup Condition="'$(TargetFramework)'=='net46'">
+    <DefineConstants>$(DefineConstants);FEATURE_VISUALSTUDIOSETUP</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)'=='net46'">
     <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="1.11.2290" />
+    <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes" Version="15.0.10" />
   </ItemGroup>
-  
-  <!-- Taken from Microsoft.VisualStudio.SDK.EmbedInteropTypes NuGet package which tries to fix this issue
-       (but doesn't include this assembly in their list).  -->
-  <Target Name="LinkVSEmbeddableAssemblies" DependsOnTargets="ResolveReferences" AfterTargets="ResolveReferences">
-    <ItemGroup>
-      <ReferencePath Condition="'%(FileName)' == 'Microsoft.VisualStudio.Setup.Configuration.Interop'">
-        <EmbedInteropTypes>true</EmbedInteropTypes>
-      </ReferencePath>
-    </ItemGroup>
-  </Target>
+
 </Project>

@@ -3,10 +3,7 @@
   "assemblyVersion": "1.0.0.0",
   "cloudBuild": {
     "buildNumber": {
-      "enabled": true,
-      "includeCommitId": {
-        "where": "fourthVersionComponent"
-      }
+      "enabled": true
     }
   }
 }

@@ -1,17 +1,18 @@
-﻿// Taken from https://github.com/Microsoft/msbuild/blob/6851538897f5d7b08024a6d8435bc44be5869e53/src/Shared/VisualStudioLocationHelper.cs
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Taken from https://github.com/Microsoft/msbuild/blob/6851538897f5d7b08024a6d8435bc44be5869e53/src/Shared/VisualStudioLocationHelper.cs
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.Setup.Configuration;
 
 #if FEATURE_VISUALSTUDIOSETUP
 using Microsoft.VisualStudio.Setup.Configuration;
 #endif
 
-namespace Microsoft.Build.Shared
+namespace Microsoft.Build.MSBuildLocator
 {
     /// <summary>
     /// Helper class to wrap the Microsoft.VisualStudio.Setup.Configuration.Interop API to query
@@ -47,16 +48,9 @@ namespace Microsoft.Build.Shared
 
                     var instance = instances[0];
                     var state = ((ISetupInstance2)instance).GetState();
-                    Version version;
 
-                    try
-                    {
-                        version = new Version(instance.GetInstallationVersion());
-                    }
-                    catch (FormatException)
-                    {
+                    if (!Version.TryParse(instance.GetInstallationVersion(), out Version version))
                         continue;
-                    }
 
                     // If the install was complete and a valid version, consider it.
                     if (state == InstanceState.Complete)
@@ -64,8 +58,9 @@ namespace Microsoft.Build.Shared
                         validInstances.Add(new VisualStudioInstance(
                             instance.GetDisplayName(),
                             instance.GetInstallationPath(),
-                            version));
-                    }
+                            version,
+                            DiscoveryType.VisualStudioSetup));
+                    };
                 } while (fetched > 0);
             }
             catch (COMException)
@@ -93,7 +88,7 @@ namespace Microsoft.Build.Shared
 
                 if (result < 0)
                 {
-                    throw new COMException("Failed to get query", result);
+                    throw new COMException($"Failed to get {nameof(query)}", result);
                 }
 
                 return query;
@@ -104,33 +99,5 @@ namespace Microsoft.Build.Shared
         private static extern int GetSetupConfiguration(
             [MarshalAs(UnmanagedType.Interface), Out] out ISetupConfiguration configuration,
             IntPtr reserved);
-    }
-
-    /// <summary>
-    /// Wrapper class to represent an installed instance of Visual Studio.
-    /// </summary>
-    internal class VisualStudioInstance
-    {
-        /// <summary>
-        /// Version of the Visual Studio Instance
-        /// </summary>
-        internal Version Version { get; }
-
-        /// <summary>
-        /// Path to the Visual Studio installation
-        /// </summary>
-        internal string Path { get; }
-
-        /// <summary>
-        /// Full name of the Visual Studio instance with SKU name
-        /// </summary>
-        internal string Name { get; }
-
-        internal VisualStudioInstance(string name, string path, Version version)
-        {
-            Name = name;
-            Path = path;
-            Version = version;
-        }
     }
 }
