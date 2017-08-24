@@ -11,7 +11,11 @@ namespace Microsoft.Build.MSBuildLocator
 {
     public static class MSBuildLocator
     {
-        private static readonly string[] s_msBuildAssemblies = {"Microsoft.Build", "Microsoft.Build.Framework"};
+        private static readonly string[] s_msBuildAssemblies =
+        {
+            "Microsoft.Build", "Microsoft.Build.Framework", "Microsoft.Build.Tasks.Core",
+            "Microsoft.Build.Utilities.Core"
+        };
 
         private static readonly Lazy<IList<VisualStudioInstance>> s_instances =
             new Lazy<IList<VisualStudioInstance>>(GetInstances);
