@@ -17,25 +17,56 @@ namespace Microsoft.Build.MSBuildLocator
             "Microsoft.Build.Utilities.Core"
         };
 
-        private static readonly Lazy<IList<VisualStudioInstance>> s_instances =
-            new Lazy<IList<VisualStudioInstance>>(GetInstances);
+        /// <summary>
+        ///     Query for all Visual Studio instances.
+        /// </summary>
+        /// <remarks>
+        ///     Only includes Visual Studio 2017 (v15.0) and higher.
+        /// </remarks>
+        /// <returns>Enumeration of all Visual Studio instances detected on the machine.</returns>
+        public static IEnumerable<VisualStudioInstance> QueryVisualStudioInstances()
+        {
+            return QueryVisualStudioInstances(VisualStudioInstanceQueryOptions.Default);
+        }
 
-        public static IEnumerable<VisualStudioInstance> Instances => s_instances.Value;
+        /// <summary>
+        ///     Query for Visual Studio instances matching the given options.
+        /// </summary>
+        /// <remarks>
+        ///     Only includes Visual Studio 2017 (v15.0) and higher.
+        /// </remarks>
+        /// <param name="options">Query options for Visual Studio instances.</param>
+        /// <returns>Enumeration of Visual Studio instances detected on the machine.</returns>
+        public static IEnumerable<VisualStudioInstance> QueryVisualStudioInstances(
+            VisualStudioInstanceQueryOptions options)
+        {
+            return GetInstances().Where(i => i.DiscoveryType.HasFlag(options.DiscoveryTypes));
+        }
 
+        /// <summary>
+        ///     Discover instances of Visual Studio and register the first one. See <see cref="RegisterInstance" />.
+        /// </summary>
+        /// <returns>Instance of Visual Studio found and registered.</returns>
         public static VisualStudioInstance RegisterDefaults()
         {
-            var instance = Instances.FirstOrDefault();
+            var instance = GetInstances().FirstOrDefault();
             RegisterInstance(instance);
 
             return instance;
         }
 
+        /// <summary>
+        ///     Add assembly resolution for Microsoft.Build core dlls in the current AppDomain from the specified
+        ///     instance of Visual Studio. See <see cref="QueryVisualStudioInstances()" /> to discover Visual Studio
+        ///     instances or use <see cref="RegisterDefaults" />.
+        /// </summary>
+        /// <param name="instance"></param>
         public static void RegisterInstance(VisualStudioInstance instance)
         {
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
 
-            AppDomain.CurrentDomain.AssemblyResolve += (sender, eventArgs) =>
+            AppDomain.CurrentDomain.AssemblyResolve += (_, eventArgs) =>
             {
                 var assemblyName = new AssemblyName(eventArgs.Name);
                 if (s_msBuildAssemblies.Contains(assemblyName.Name, StringComparer.OrdinalIgnoreCase))
@@ -48,15 +79,14 @@ namespace Microsoft.Build.MSBuildLocator
             };
         }
 
-        private static List<VisualStudioInstance> GetInstances()
+        private static IEnumerable<VisualStudioInstance> GetInstances()
         {
-            var instances = new List<VisualStudioInstance>();
-
             var devConsole = GetDevConsoleInstance();
-            if (devConsole != null) instances.Add(devConsole);
-            instances.AddRange(VisualStudioLocationHelper.GetInstances());
+            if (devConsole != null)
+                yield return devConsole;
 
-            return instances;
+            foreach (var instance in VisualStudioLocationHelper.GetInstances())
+                yield return instance;
         }
 
         private static VisualStudioInstance GetDevConsoleInstance()
