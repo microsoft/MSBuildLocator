@@ -109,7 +109,7 @@ namespace BuilderApp
         {
             public void Initialize(IEventSource eventSource)
             {
-                eventSource.AnyEventRaised += (sender, args) => { Console.WriteLine(args.Message); };
+                eventSource.AnyEventRaised += (_, args) => { Console.WriteLine(args.Message); };
             }
 
             public void Shutdown()
