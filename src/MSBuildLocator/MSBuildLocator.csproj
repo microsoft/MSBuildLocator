@@ -21,6 +21,7 @@
   <ItemGroup Condition="'$(TargetFramework)'=='net46'">
     <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="1.11.2290" PrivateAssets="all" />
     <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes" Version="15.0.10" PrivateAssets="all" />
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
