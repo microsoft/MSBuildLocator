@@ -31,4 +31,10 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <FilesToSign Include="$(OutDir)\Microsoft.Build.MSBuildLocator.dll">
+      <Authenticode>Microsoft</Authenticode>
+    </FilesToSign>
+  </ItemGroup>
+
 </Project>
