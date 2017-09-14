@@ -3,6 +3,8 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net46</TargetFramework>
+    <DebugType>full</DebugType>
+
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <AssemblyName>Microsoft.Build.MSBuildLocator</AssemblyName>
     <RootNamespace>Microsoft.Build.MSBuildLocator</RootNamespace>
