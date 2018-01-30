@@ -4,7 +4,7 @@
 using System;
 using System.IO;
 
-namespace Microsoft.Build.MSBuildLocator
+namespace Microsoft.Build.Locator
 {
     /// <summary>
     ///     Represents an installed instance of Visual Studio.

@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace Microsoft.Build.MSBuildLocator
+namespace Microsoft.Build.Locator
 {
     public static class MSBuildLocator
     {
