@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net46</TargetFramework>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,12 +12,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build" Version="15.3.409" />
-    <PackageReference Include="Microsoft.Build.Framework" Version="15.3.409" />
+    <PackageReference Include="Microsoft.Build" Version="15.5.180" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="15.5.180" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\MSBuildLocator\MSBuildLocator.csproj" />
+    <ProjectReference Include="..\..\src\MSBuildLocator\Microsoft.Build.Locator.csproj" />
   </ItemGroup>
 
 </Project>

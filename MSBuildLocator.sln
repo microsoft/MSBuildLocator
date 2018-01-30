@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26730.10
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MSBuildLocator", "src\MSBuildLocator\MSBuildLocator.csproj", "{2F4700C6-A6F6-49DF-ABF1-6213AAC4BCFD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Build.Locator", "src\MSBuildLocator\Microsoft.Build.Locator.csproj", "{2F4700C6-A6F6-49DF-ABF1-6213AAC4BCFD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MSBuildLocator.Tests", "src\MSBuildLocator.Tests\MSBuildLocator.Tests.csproj", "{81407A1F-D2DD-466F-8F6C-D53FE04B4931}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Build.Locator.Tests", "src\MSBuildLocator.Tests\Microsoft.Build.Locator.Tests.csproj", "{81407A1F-D2DD-466F-8F6C-D53FE04B4931}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BuilderApp", "samples\BuilderApp\BuilderApp.csproj", "{70F35A21-43E2-47CB-8B96-B160C6758EAA}"
 EndProject

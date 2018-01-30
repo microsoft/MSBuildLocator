@@ -3,12 +3,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Framework;
-using Microsoft.Build.MSBuildLocator;
+using Microsoft.Build.Locator;
 
 namespace BuilderApp
 {
@@ -33,7 +34,11 @@ namespace BuilderApp
             Console.WriteLine();
 
             var result = new Builder().Build(projectFilePath);
+            Console.WriteLine();
+
+            Console.ForegroundColor = result ? ConsoleColor.Green : ConsoleColor.Red;
             Console.WriteLine($"Build result: {result}");
+            Console.ResetColor();
         }
 
         private static VisualStudioInstance AskWhichVisualStudioInstanceToUse(List<VisualStudioInstance> instances)
@@ -100,6 +105,14 @@ namespace BuilderApp
     {
         public bool Build(string projectFile)
         {
+            var assembly = typeof(Project).Assembly;
+            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+
+            Console.WriteLine();
+            Console.WriteLine($"BuildApp running using MSBuild version {fvi.FileVersion}");
+            Console.WriteLine(Path.GetDirectoryName(assembly.Location));
+            Console.WriteLine();
+
             var pre = ProjectRootElement.Open(projectFile);
             var project = new Project(pre);
             return project.Build(new Logger());

@@ -6,8 +6,8 @@
     <DebugType>full</DebugType>
 
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
-    <AssemblyName>Microsoft.Build.MSBuildLocator</AssemblyName>
-    <RootNamespace>Microsoft.Build.MSBuildLocator</RootNamespace>
+    <AssemblyName>Microsoft.Build.Locator</AssemblyName>
+    <RootNamespace>Microsoft.Build.Locator</RootNamespace>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
     <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
@@ -21,13 +21,13 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)'=='net46'">
-    <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="1.11.2290" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes" Version="15.0.10" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="1.16.30" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes" Version="15.0.15" PrivateAssets="all" />
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="build\Microsoft.Build.MSBuildLocator.props">
+    <Content Include="build\Microsoft.Build.Locator.props">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <PackagePath>build\</PackagePath>
     </Content>

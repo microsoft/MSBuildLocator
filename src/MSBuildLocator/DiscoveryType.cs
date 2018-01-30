@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Microsoft.Build.MSBuildLocator
+namespace Microsoft.Build.Locator
 {
     /// <summary>
     ///     Enum to indicate type of Visual Studio discovery.

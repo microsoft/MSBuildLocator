@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.Setup.Configuration;
 
 #endif
 
-namespace Microsoft.Build.MSBuildLocator
+namespace Microsoft.Build.Locator
 {
     /// <summary>
     ///     Helper class to wrap the Microsoft.VisualStudio.Setup.Configuration.Interop API to query
