@@ -19,6 +19,6 @@
     </ItemGroup>
     <Error
       Condition="'@(MSBuildPackagesWithoutPrivateAssets)' != ''"
-      Text="A PackageReference to Microsoft.Build.* without PrivateAssets set to all exists in your project. This will cause MSBuild assemblies to be copied to your output directory, causing your application to load them at run-time. To use the copy associated with Visual Studio, set PrivateAssets to true on the MSBuild PackageReferences. To disable this check, set the property DisableMSBuildPrivateAssetsTest = true in your project file (not recommended as you must distributed all of MSBuild + associated toolset). Package(s) referenced: @(MSBuildPackagesWithoutPrivateAssets)" />
+      Text="A PackageReference to Microsoft.Build.* without PrivateAssets set to all exists in your project. This will cause MSBuild assemblies to be copied to your output directory, causing your application to load them at run-time. To use the copy associated with Visual Studio, set PrivateAssets to all on the MSBuild PackageReferences. To disable this check, set the property DisableMSBuildPrivateAssetsTest = true in your project file (not recommended as you must distributed all of MSBuild + associated toolset). Package(s) referenced: @(MSBuildPackagesWithoutPrivateAssets)" />
   </Target>
 </Project>
