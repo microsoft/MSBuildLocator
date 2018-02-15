@@ -1,0 +1,24 @@
+﻿<Project>
+  <Target Name="EnsureMSBuildPrivateAssets" AfterTargets="Build" Condition="'$(DisableMSBuildPrivateAssetsCheck)' != 'true'">
+    <ItemGroup>
+      <MSBuildPackagesWithoutPrivateAssets
+        Include="@(PackageReference)"
+        Condition="
+          '%(PackageReference.PrivateAssets)' != 'all' and
+          (
+            '%(PackageReference.Identity)' == 'Microsoft.Build' or
+            '%(PackageReference.Identity)' == 'Microsoft.Build.Framework' or
+            '%(PackageReference.Identity)' == 'Microsoft.Build.Utilities.Core' or
+            '%(PackageReference.Identity)' == 'Microsoft.Build.Tasks.Core' or
+            '%(PackageReference.Identity)' == 'Microsoft.Build.Engine' or
+            '%(PackageReference.Identity)' == 'Microsoft.Build.Conversion.Core' or
+            '%(PackageReference.Identity)' == 'Microsoft.Build.Runtime' or
+            '%(PackageReference.Identity)' == 'Microsoft.Build.Localization' or
+            '%(PackageReference.Identity)' == 'Microsoft.Build.Engine'
+          )"/>
+    </ItemGroup>
+    <Error
+      Condition="'@(MSBuildPackagesWithoutPrivateAssets)' != ''"
+      Text="A PackageReference to Microsoft.Build.* without PrivateAssets set to true exists in your project. This will cause MSBuild assemblies to be copied to your output directory, causing your application will load them at run-time. To use the copy associated with Visual Studio, set PrivateAssets to true on the MSBuild PackageReferences. To disable this check, set the property DisableMSBuildPrivateAssetsTest = true in your project file (not recommended as you must distributed all of MSBuild + associated toolset). Package(s) referenced: @(MSBuildPackagesWithoutPrivateAssets)" />
+  </Target>
+</Project>
