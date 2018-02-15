@@ -31,6 +31,10 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <PackagePath>build\</PackagePath>
     </Content>
+    <Content Include="build\Microsoft.Build.Locator.targets">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <PackagePath>build\</PackagePath>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
