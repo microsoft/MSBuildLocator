@@ -69,7 +69,7 @@ namespace Microsoft.Build.Locator
             AppDomain.CurrentDomain.AssemblyResolve += (_, eventArgs) =>
             {
                 var assemblyName = new AssemblyName(eventArgs.Name);
-                if (s_msBuildAssemblies.Contains(assemblyName.Name, StringComparer.OrdinalIgnoreCase))
+                if (IsMSBuildAssembly(assemblyName))
                 {
                     var targetAssembly = Path.Combine(instance.MSBuildPath, assemblyName.Name + ".dll");
                     return File.Exists(targetAssembly) ? Assembly.LoadFrom(targetAssembly) : null;
@@ -77,6 +77,11 @@ namespace Microsoft.Build.Locator
 
                 return null;
             };
+        }
+
+        private static bool IsMSBuildAssembly(AssemblyName assemblyName)
+        {
+            return s_msBuildAssemblies.Contains(assemblyName.Name, StringComparer.OrdinalIgnoreCase);
         }
 
         private static IEnumerable<VisualStudioInstance> GetInstances()
