@@ -66,6 +66,21 @@ namespace Microsoft.Build.Locator
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
 
+            var loadedMSBuildAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(IsMSBuildAssembly);
+            if (loadedMSBuildAssemblies.Any())
+            {
+                var loadedAssemblyList = string.Join(Environment.NewLine, loadedMSBuildAssemblies.Select(a => a.GetName()));
+
+                var error = $"{typeof(MSBuildLocator)}.{nameof(RegisterInstance)} was called, but MSBuild assemblies were already loaded." +
+                    Environment.NewLine +
+                    $"Ensure that {nameof(RegisterInstance)} is called before any method that directly references types in the Microsoft.Build namespace has been called." +
+                    Environment.NewLine +
+                    "Loaded MSBuild assemblies: " +
+                    loadedAssemblyList;
+
+                throw new InvalidOperationException(error);
+            }
+
             AppDomain.CurrentDomain.AssemblyResolve += (_, eventArgs) =>
             {
                 var assemblyName = new AssemblyName(eventArgs.Name);
@@ -77,6 +92,11 @@ namespace Microsoft.Build.Locator
 
                 return null;
             };
+        }
+
+        private static bool IsMSBuildAssembly(Assembly assembly)
+        {
+            return IsMSBuildAssembly(assembly.GetName());
         }
 
         private static bool IsMSBuildAssembly(AssemblyName assemblyName)
