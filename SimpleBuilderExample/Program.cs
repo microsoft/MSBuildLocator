@@ -11,6 +11,11 @@ namespace SimpleBuilderExample
     {
         static void Main(string[] args)
         {
+            Build();
+        }
+
+        private static void Build()
+        {
             var p = new BuildParameters
             {
                 MaxNodeCount = 4,
@@ -18,10 +23,10 @@ namespace SimpleBuilderExample
             };
 
             var req = new BuildRequestData("ProjectToBeBuilt.proj",
-                new Dictionary<string, string>(), 
-                null, 
-                new[] { "Build" }, 
-                null, 
+                new Dictionary<string, string>(),
+                null,
+                new[] { "Build" },
+                null,
                 BuildRequestDataFlags.None);
 
             var result = BuildManager.DefaultBuildManager.Build(p, req);
