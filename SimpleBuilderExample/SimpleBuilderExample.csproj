@@ -56,9 +56,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Build">
       <Version>15.1.548</Version>
+      <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Build.Framework">
       <Version>15.1.548</Version>
+      <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
