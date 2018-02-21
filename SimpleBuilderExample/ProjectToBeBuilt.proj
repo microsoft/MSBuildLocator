@@ -1,0 +1,31 @@
+﻿<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ChildProject Include="$(MSBuildThisFileFullPath)">
+      <AdditionalProperties>Instance=1</AdditionalProperties>
+    </ChildProject>
+    <ChildProject Include="$(MSBuildThisFileFullPath)">
+      <AdditionalProperties>Instance=2</AdditionalProperties>
+    </ChildProject>
+    <ChildProject Include="$(MSBuildThisFileFullPath)">
+      <AdditionalProperties>Instance=3</AdditionalProperties>
+    </ChildProject>
+    <ChildProject Include="$(MSBuildThisFileFullPath)">
+      <AdditionalProperties>Instance=4</AdditionalProperties>
+    </ChildProject>
+    <ChildProject Include="$(MSBuildThisFileFullPath)">
+      <AdditionalProperties>Instance=5</AdditionalProperties>
+    </ChildProject>
+  </ItemGroup>
+  
+  <Target Name="Build">
+    <MSBuild Projects="@(ChildProject)"
+             Targets="Delay"
+             BuildInParallel="true" />
+  </Target>
+
+  <Target Name="Delay">
+    <Message Importance="high" Text="Waiting in instance $(Instance)" />
+    <Exec Command="cmd /c ping 127.0.0.1 -n 6"
+          StandardOutputImportance="low"/>
+  </Target>
+</Project>
