@@ -3,6 +3,7 @@
 
 using Microsoft.Build.Execution;
 using Microsoft.Build.Framework;
+using Microsoft.Build.Locator;
 using System.Collections.Generic;
 
 namespace SimpleBuilderExample
@@ -11,6 +12,8 @@ namespace SimpleBuilderExample
     {
         static void Main(string[] args)
         {
+            MSBuildLocator.RegisterDefaults();
+
             Build();
         }
 
