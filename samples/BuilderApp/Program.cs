@@ -101,6 +101,8 @@ namespace BuilderApp
         }
     }
 
+    // Class for performing the project build
+    // The Microsoft.Build dlls needed from within aren't loaded until after the class is instantiated
     public class Builder
     {
         public bool Build(string projectFile)
