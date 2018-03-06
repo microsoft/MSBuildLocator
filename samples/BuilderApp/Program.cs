@@ -101,8 +101,15 @@ namespace BuilderApp
         }
     }
 
-    // Class for performing the project build
-    // The Microsoft.Build dlls needed from within aren't loaded until after the class is instantiated
+    /// <summary>
+    /// Class for performing the project build
+    /// </summary>
+    /// <remarks>
+    /// The Microsoft.Build namespaces must be referenced from a method that is called
+    /// after RegisterInstance so that it has a chance to change their load behavior.
+    /// Here, we put Microsoft.Build calls into a separate class
+    /// that is only referenced after calling RegisterInstance.
+    /// </remarks>
     public class Builder
     {
         public bool Build(string projectFile)
