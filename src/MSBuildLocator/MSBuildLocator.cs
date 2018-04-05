@@ -6,11 +6,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace Microsoft.Build.Locator
 {
     public static class MSBuildLocator
     {
+        private const string MSBuildPublicKeyToken = "b03f5f7f11d50a3a";
+
         private static readonly string[] s_msBuildAssemblies =
         {
             "Microsoft.Build", "Microsoft.Build.Framework", "Microsoft.Build.Tasks.Core",
@@ -101,7 +104,24 @@ namespace Microsoft.Build.Locator
 
         private static bool IsMSBuildAssembly(AssemblyName assemblyName)
         {
-            return s_msBuildAssemblies.Contains(assemblyName.Name, StringComparer.OrdinalIgnoreCase);
+            if (!s_msBuildAssemblies.Contains(assemblyName.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var publicKeyToken = assemblyName.GetPublicKeyToken();
+            if (publicKeyToken == null || publicKeyToken.Length == 0)
+            {
+                return false;
+            }
+
+            var sb = new StringBuilder();
+            foreach (var b in publicKeyToken)
+            {
+                sb.Append($"{b:x2}");
+            }
+
+            return sb.ToString().Equals(MSBuildPublicKeyToken, StringComparison.OrdinalIgnoreCase);
         }
 
         private static IEnumerable<VisualStudioInstance> GetInstances()
