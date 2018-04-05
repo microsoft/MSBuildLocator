@@ -51,7 +51,8 @@ namespace Microsoft.Build.Locator
                         continue;
 
                     // If the install was complete and a valid version, consider it.
-                    if (state == InstanceState.Complete)
+                    if (state == InstanceState.Complete ||
+                        (state.HasFlag(InstanceState.Registered) && state.HasFlag(InstanceState.NoRebootRequired)))
                         validInstances.Add(new VisualStudioInstance(
                             instance.GetDisplayName(),
                             instance.GetInstallationPath(),
