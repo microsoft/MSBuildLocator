@@ -1,0 +1,10 @@
+version: '{build}'
+image: Visual Studio 2017
+build:
+  project: MSBuildLocator.sln
+  publish_nuget: true
+  parallel: true
+  verbosity: minimal
+
+artifacts:
+- path: **\*.nupkg
