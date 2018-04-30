@@ -17,7 +17,19 @@ namespace Microsoft.Build.Locator
             VisualStudioRootPath = path;
             Version = version;
             DiscoveryType = discoveryType;
-            MSBuildPath = Path.Combine(VisualStudioRootPath, "MSBuild", "15.0", "Bin");
+
+            switch (discoveryType)
+            {
+                case DiscoveryType.DeveloperConsole:
+                case DiscoveryType.VisualStudioSetup:
+                    MSBuildPath = Path.Combine(VisualStudioRootPath, "MSBuild", "15.0", "Bin");
+                    break;
+                case DiscoveryType.DotNetSdk:
+                    MSBuildPath = VisualStudioRootPath;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(discoveryType), discoveryType, null);
+            }
         }
 
         /// <summary>

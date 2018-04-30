@@ -16,7 +16,9 @@ namespace Microsoft.Build.Locator
 
         private static readonly string[] s_msBuildAssemblies =
         {
-            "Microsoft.Build", "Microsoft.Build.Framework", "Microsoft.Build.Tasks.Core",
+            "Microsoft.Build",
+            "Microsoft.Build.Framework",
+            "Microsoft.Build.Tasks.Core",
             "Microsoft.Build.Utilities.Core"
         };
 
@@ -43,7 +45,14 @@ namespace Microsoft.Build.Locator
         public static IEnumerable<VisualStudioInstance> QueryVisualStudioInstances(
             VisualStudioInstanceQueryOptions options)
         {
-            return GetInstances().Where(i => i.DiscoveryType.HasFlag(options.DiscoveryTypes));
+            return QueryVisualStudioInstances(GetInstances(options), options);
+        }
+
+        internal static IEnumerable<VisualStudioInstance> QueryVisualStudioInstances(
+            IEnumerable<VisualStudioInstance> instances,
+            VisualStudioInstanceQueryOptions options)
+        {
+            return instances.Where(i => options.DiscoveryTypes.HasFlag(i.DiscoveryType));
         }
 
         /// <summary>
@@ -52,7 +61,7 @@ namespace Microsoft.Build.Locator
         /// <returns>Instance of Visual Studio found and registered.</returns>
         public static VisualStudioInstance RegisterDefaults()
         {
-            var instance = GetInstances().FirstOrDefault();
+            var instance = GetInstances(VisualStudioInstanceQueryOptions.Default).FirstOrDefault();
             RegisterInstance(instance);
 
             return instance;
@@ -69,17 +78,17 @@ namespace Microsoft.Build.Locator
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
 
-            var loadedMSBuildAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(IsMSBuildAssembly);
+            var loadedMSBuildAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(IsMSBuildAssembly).Select(i => i.GetName()).ToList();
             if (loadedMSBuildAssemblies.Any())
             {
-                var loadedAssemblyList = string.Join(Environment.NewLine, loadedMSBuildAssemblies.Select(a => a.GetName()));
-
-                var error = $"{typeof(MSBuildLocator)}.{nameof(RegisterInstance)} was called, but MSBuild assemblies were already loaded." +
-                    Environment.NewLine +
-                    $"Ensure that {nameof(RegisterInstance)} is called before any method that directly references types in the Microsoft.Build namespace has been called." +
-                    Environment.NewLine +
-                    "Loaded MSBuild assemblies: " +
-                    loadedAssemblyList;
+                var error = $@"
+{typeof(MSBuildLocator)}.{nameof(RegisterInstance)} was called, but MSBuild assemblies were already loaded.
+{Environment.NewLine}
+Ensure that {nameof(RegisterInstance)} is called before any method that directly references types in the Microsoft.Build namespace has been called.
+{Environment.NewLine}
+Loaded MSBuild assemblies:
+{Environment.NewLine}
+  {String.Join($"  {Environment.NewLine}", loadedMSBuildAssemblies)}";
 
                 throw new InvalidOperationException(error);
             }
@@ -124,16 +133,27 @@ namespace Microsoft.Build.Locator
             return sb.ToString().Equals(MSBuildPublicKeyToken, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static IEnumerable<VisualStudioInstance> GetInstances()
+        private static IEnumerable<VisualStudioInstance> GetInstances(VisualStudioInstanceQueryOptions options)
         {
+#if NET46
             var devConsole = GetDevConsoleInstance();
             if (devConsole != null)
                 yield return devConsole;
 
+    #if FEATURE_VISUALSTUDIOSETUP
             foreach (var instance in VisualStudioLocationHelper.GetInstances())
                 yield return instance;
+    #endif
+#endif
+
+#if NETSTANDARD2_0
+            var dotnetSdk = DotNetSdkLocationHelper.GetInstance(options.WorkingDir);
+            if (dotnetSdk != null)
+                yield return dotnetSdk;
+#endif
         }
 
+#if NET46
         private static VisualStudioInstance GetDevConsoleInstance()
         {
             var path = Environment.GetEnvironmentVariable("VSINSTALLDIR");
@@ -160,5 +180,6 @@ namespace Microsoft.Build.Locator
 
             return null;
         }
+#endif
     }
 }
