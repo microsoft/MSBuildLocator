@@ -147,7 +147,7 @@ Loaded MSBuild assemblies:
 #endif
 
 #if NETSTANDARD2_0
-            var dotnetSdk = DotNetSdkLocationHelper.GetInstance(options.WorkingDir);
+            var dotnetSdk = DotNetSdkLocationHelper.GetInstance(options.WorkingDirectory);
             if (dotnetSdk != null)
                 yield return dotnetSdk;
 #endif

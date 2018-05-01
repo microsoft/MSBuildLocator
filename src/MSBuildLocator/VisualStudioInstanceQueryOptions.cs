@@ -32,6 +32,6 @@ namespace Microsoft.Build.Locator
         /// <summary>
         /// A working directory to use when querying for instances.
         /// </summary>
-        public string WorkingDir { get; set; } = Environment.CurrentDirectory;
+        public string WorkingDirectory { get; set; } = Environment.CurrentDirectory;
     }
 }
