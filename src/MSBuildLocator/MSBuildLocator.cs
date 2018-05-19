@@ -69,6 +69,16 @@ namespace Microsoft.Build.Locator
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
 
+            RegisterMSbuildPath(instance.MSBuildPath);
+        }
+
+        /// <summary>
+        ///     Add assembly resolution for Microsoft.Build core dlls in the current AppDomain from the specified
+        ///     path.
+        /// </summary>
+        /// <param name="msbuildPath"></param>
+        public static void RegisterMSbuildPath(string msbuildPath)
+        {
             var loadedMSBuildAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(IsMSBuildAssembly);
             if (loadedMSBuildAssemblies.Any())
             {
@@ -89,7 +99,7 @@ namespace Microsoft.Build.Locator
                 var assemblyName = new AssemblyName(eventArgs.Name);
                 if (IsMSBuildAssembly(assemblyName))
                 {
-                    var targetAssembly = Path.Combine(instance.MSBuildPath, assemblyName.Name + ".dll");
+                    var targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
                     return File.Exists(targetAssembly) ? Assembly.LoadFrom(targetAssembly) : null;
                 }
 
