@@ -69,6 +69,22 @@ namespace Microsoft.Build.Locator
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
 
+            RegisterMSBuildPath(instance.MSBuildPath);
+        }
+
+        /// <summary>
+        ///     Add assembly resolution for Microsoft.Build core dlls in the current AppDomain from the specified
+        ///     path.
+        /// </summary>
+        /// <param name="msbuildPath">
+        ///     Path to the directory containing a deployment of MSBuild binaries.
+        ///     A minimal MSBuild deployment would be the publish result of the Microsoft.Build.Runtime package.
+        ///
+        ///     In order to restore and build real projects, one needs a deployment that contains the rest of the toolchain (nuget, compilers, etc.).
+        ///     Such deployments can be found in installations such as Visual Studio or dotnet CLI.
+        /// </param>
+        public static void RegisterMSBuildPath(string msbuildPath)
+        {
             var loadedMSBuildAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(IsMSBuildAssembly);
             if (loadedMSBuildAssemblies.Any())
             {
@@ -89,7 +105,7 @@ namespace Microsoft.Build.Locator
                 var assemblyName = new AssemblyName(eventArgs.Name);
                 if (IsMSBuildAssembly(assemblyName))
                 {
-                    var targetAssembly = Path.Combine(instance.MSBuildPath, assemblyName.Name + ".dll");
+                    var targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
                     return File.Exists(targetAssembly) ? Assembly.LoadFrom(targetAssembly) : null;
                 }
 
@@ -142,6 +158,12 @@ namespace Microsoft.Build.Locator
                 var versionString = Environment.GetEnvironmentVariable("VSCMD_VER");
                 Version version;
                 Version.TryParse(versionString, out version);
+
+                if (version == null && versionString?.Contains('-') == true)
+                {
+                    versionString = versionString.Substring(0, versionString.IndexOf('-'));
+                    Version.TryParse(versionString, out version);
+                }
 
                 if (version == null)
                 {

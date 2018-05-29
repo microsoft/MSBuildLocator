@@ -24,14 +24,24 @@ namespace BuilderApp
             //   1) Use defaults and call: MSBuildLocator.RegisterDefaults();
             //   2) Do something fancier and ask the user. As an example we'll do that.
             var instances = MSBuildLocator.QueryVisualStudioInstances().ToList();
-            var instanceToUse = AskWhichVisualStudioInstanceToUse(instances);
+            var msbuildDeploymentToUse = AskWhichMSBuildToUse(instances);
 
-            // Calling RegisterInstance will subscribe to AssemblyResolve event. After this we can now
+            // Calling Register methods will subscribe to AssemblyResolve event. After this we can
             // safely call code that use MSBuild types (in the Builder class).
-            MSBuildLocator.RegisterInstance(instanceToUse);
+            if (msbuildDeploymentToUse.VSInstance != null)
+            {
+                Console.WriteLine($"Using MSBuild from VS Instance: {msbuildDeploymentToUse.VSInstance.Name} - {msbuildDeploymentToUse.VSInstance.Version}");
+                Console.WriteLine();
 
-            Console.WriteLine($"Using VS Instance: {instanceToUse.Name} - {instanceToUse.Version}");
-            Console.WriteLine();
+                MSBuildLocator.RegisterInstance(msbuildDeploymentToUse.VSInstance);
+            }
+            else
+            {
+                Console.WriteLine($"Using MSBuild from path: {msbuildDeploymentToUse.MSBuildPath}");
+                Console.WriteLine();
+
+                MSBuildLocator.RegisterMSBuildPath(msbuildDeploymentToUse.MSBuildPath);
+            }
 
             var result = new Builder().Build(projectFilePath);
             Console.WriteLine();
@@ -41,14 +51,14 @@ namespace BuilderApp
             Console.ResetColor();
         }
 
-        private static VisualStudioInstance AskWhichVisualStudioInstanceToUse(List<VisualStudioInstance> instances)
+        private static (VisualStudioInstance VSInstance, string MSBuildPath) AskWhichMSBuildToUse(List<VisualStudioInstance> instances)
         {
             if (instances.Count == 0)
             {
-                Console.WriteLine("MSBuild not found! Exiting.");
-                Environment.Exit(-1);
+                Console.WriteLine("No Visual Studio instances found!");
             }
 
+            Console.WriteLine($"0) Custom path");
             for (var i = 1; i <= instances.Count; i++)
             {
                 var instance = instances[i - 1];
@@ -65,11 +75,28 @@ namespace BuilderApp
             Console.WriteLine();
             Console.WriteLine("Select an instance of MSBuild: ");
             var answer = Console.ReadLine();
-            VisualStudioInstance instanceUsed = null;
 
-            if (int.TryParse(answer, out int instanceChoice) && instanceChoice > 0 && instanceChoice <= instances.Count)
+            if (int.TryParse(answer, out int instanceChoice) && instanceChoice >= 0 && instanceChoice <= instances.Count)
             {
-                instanceUsed = instances[instanceChoice - 1];
+                if (instanceChoice == 0)
+                {
+                    Console.WriteLine("Input path to MSBuild deployment:");
+                    var msbuildPath = Console.ReadLine();
+
+                    if (!Directory.Exists(msbuildPath))
+                    {
+                        Console.WriteLine($"Directory does not exist: {msbuildPath}");
+                        Environment.Exit(-1);
+                    }
+
+                    return (null, msbuildPath);
+
+                }
+                else
+                {
+                    var instanceUsed = instances[instanceChoice - 1];
+                    return (instanceUsed, null);
+                }
             }
             else
             {
@@ -77,7 +104,7 @@ namespace BuilderApp
                 Environment.Exit(-1);
             }
 
-            return instanceUsed;
+            throw new Exception("Invalid parsing");
         }
 
         private static void Header()
