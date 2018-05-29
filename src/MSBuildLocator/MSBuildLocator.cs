@@ -143,7 +143,7 @@ namespace Microsoft.Build.Locator
                 Version version;
                 Version.TryParse(versionString, out version);
 
-                if (version == null && versionString.Contains('-'))
+                if (version == null && versionString?.Contains('-') == true)
                 {
                     versionString = versionString.Substring(0, versionString.IndexOf('-'));
                     Version.TryParse(versionString, out version);
