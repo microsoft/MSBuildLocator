@@ -30,14 +30,14 @@ namespace BuilderApp
             // safely call code that use MSBuild types (in the Builder class).
             if (msbuildDeploymentToUse.VSInstance != null)
             {
-                Console.WriteLine($"Using MSBuild deployment from VS Instance: {msbuildDeploymentToUse.VSInstance.Name} - {msbuildDeploymentToUse.VSInstance.Version}");
+                Console.WriteLine($"Using MSBuild from VS Instance: {msbuildDeploymentToUse.VSInstance.Name} - {msbuildDeploymentToUse.VSInstance.Version}");
                 Console.WriteLine();
 
                 MSBuildLocator.RegisterInstance(msbuildDeploymentToUse.VSInstance);
             }
             else
             {
-                Console.WriteLine($"Using MSBuild deployment from path: {msbuildDeploymentToUse.MSBuildPath}");
+                Console.WriteLine($"Using MSBuild from path: {msbuildDeploymentToUse.MSBuildPath}");
                 Console.WriteLine();
 
                 MSBuildLocator.RegisterMSBuildPath(msbuildDeploymentToUse.MSBuildPath);
