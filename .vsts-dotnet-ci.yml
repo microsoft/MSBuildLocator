@@ -1,0 +1,79 @@
+queue:
+  name: Hosted VS2017
+  demands: msbuild
+
+variables:
+  "Parameters.solution": MSBuildLocator.sln
+  BuildConfiguration: Release
+  SignType: Test
+  BuildPlatform: ''
+
+steps:
+- task: MSBuild@1
+  displayName: /t:Pack
+  inputs:
+    solution: MSBuildLocator.sln
+    platform: '$(BuildPlatform)'
+    configuration: '$(BuildConfiguration)'
+    msbuildArguments: '/t:Pack /restore'
+    createLogFile: true
+
+- task: CopyFiles@2
+  displayName: Collect Symbols
+  inputs:
+    SourceFolder: 'src/MSBuildLocator'
+    Contents: '**\*.pdb'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/symbols'
+    CleanTargetFolder: true
+
+- task: PublishBuildArtifacts@1
+  displayName: Upload Symbols
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/symbols'
+    ArtifactName: symbols
+    ArtifactType: Container
+
+- task: CopyFiles@2
+  displayName: Collect Binaries
+  inputs:
+    SourceFolder: 'src/MSBuildLocator/bin'
+    Contents: '**'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/bin'
+    CleanTargetFolder: true
+
+- task: PublishBuildArtifacts@1
+  displayName: Upload Binaries
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/bin'
+    ArtifactName: bin
+    ArtifactType: Container
+
+- task: CopyFiles@2
+  displayName: Collect Packages
+  inputs:
+    SourceFolder: 'src/MSBuildLocator/bin/$(BuildConfiguration)'
+    Contents: '*.nupkg'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/pkg'
+    CleanTargetFolder: true
+
+- task: PublishBuildArtifacts@1
+  displayName: Upload Packages
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/pkg'
+    ArtifactName: pkg
+    ArtifactType: Container
+
+- task: CopyFiles@2
+  displayName: Collect logs
+  inputs:
+    SourceFolder: ''
+    Contents: '**\*.log'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/logs'
+    CleanTargetFolder: true
+
+- task: PublishBuildArtifacts@1
+  displayName: Upload Logs
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/logs'
+    ArtifactName: logs
+    ArtifactType: Container
