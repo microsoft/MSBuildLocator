@@ -28,6 +28,7 @@ steps:
 
 - task: PublishBuildArtifacts@1
   displayName: Upload Symbols
+  condition: eq(variables['system.pullrequest.isfork'], false)
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/symbols'
     ArtifactName: symbols
@@ -43,6 +44,7 @@ steps:
 
 - task: PublishBuildArtifacts@1
   displayName: Upload Binaries
+  condition: eq(variables['system.pullrequest.isfork'], false)
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/bin'
     ArtifactName: bin
@@ -58,6 +60,7 @@ steps:
 
 - task: PublishBuildArtifacts@1
   displayName: Upload Packages
+  condition: eq(variables['system.pullrequest.isfork'], false)
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/pkg'
     ArtifactName: pkg
@@ -65,6 +68,7 @@ steps:
 
 - task: CopyFiles@2
   displayName: Collect logs
+  condition: eq(variables['system.pullrequest.isfork'], false)
   inputs:
     SourceFolder: ''
     Contents: '**\*.log'
@@ -73,6 +77,7 @@ steps:
 
 - task: PublishBuildArtifacts@1
   displayName: Upload Logs
+  condition: eq(variables['system.pullrequest.isfork'], false)
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/logs'
     ArtifactName: logs
