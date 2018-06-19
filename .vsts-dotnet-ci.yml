@@ -10,6 +10,14 @@ variables:
 
 steps:
 - task: MSBuild@1
+  displayName: Set version number
+  condition: eq(variables['system.pullrequest.isfork'], false)
+  inputs:
+    solution: 'src\EstablishVersioning\EstablishVersioning.csproj'
+    msbuildArguments: '/restore'
+    logProjectEvents: true
+
+- task: MSBuild@1
   displayName: /t:Pack
   inputs:
     solution: MSBuildLocator.sln
