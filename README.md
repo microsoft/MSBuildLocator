@@ -1,6 +1,6 @@
 # CI status
 
-[![Build Status](https://dotnet.visualstudio.com/_apis/public/build/definitions/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/80/badge)](https://dotnet.visualstudio.com/public/_build/index?definitionId=80&branchName=yaml-ci-build)
+[![Build Status](https://dotnet.visualstudio.com/_apis/public/build/definitions/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/80/badge)](https://dotnet.visualstudio.com/public/_build/index?definitionId=80&branchName=master)
 
 # Contributing
 
