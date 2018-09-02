@@ -76,6 +76,15 @@ namespace Microsoft.Build.Locator
         public static VisualStudioInstance RegisterDefaults()
         {
             var instance = GetInstances().FirstOrDefault();
+            if (instance == null)
+            {
+                var error = "No instances of MSBuild could be detected." +
+                            Environment.NewLine +
+                            $"Try calling {nameof(RegisterInstance)} or {nameof(RegisterMSBuildPath)} to manually register one.";
+
+                throw new InvalidOperationException(error);
+            }
+
             RegisterInstance(instance);
 
             return instance;
@@ -90,7 +99,9 @@ namespace Microsoft.Build.Locator
         public static void RegisterInstance(VisualStudioInstance instance)
         {
             if (instance == null)
+            {
                 throw new ArgumentNullException(nameof(instance));
+            }
 
             RegisterMSBuildPath(instance.MSBuildPath);
         }
@@ -108,6 +119,16 @@ namespace Microsoft.Build.Locator
         /// </param>
         public static void RegisterMSBuildPath(string msbuildPath)
         {
+            if (string.IsNullOrWhiteSpace(msbuildPath))
+            {
+                throw new ArgumentException("Value may not be null or whitespace", nameof(msbuildPath));
+            }
+
+            if (!Directory.Exists(msbuildPath))
+            {
+                throw new ArgumentException($"Directory \"{msbuildPath}\" does not exist", nameof(msbuildPath));
+            }
+
             if (!CanRegister)
             {
                 var loadedAssemblyList = string.Join(Environment.NewLine, LoadedMsBuildAssemblies.Select(a => a.GetName()));
