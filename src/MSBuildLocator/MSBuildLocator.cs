@@ -39,7 +39,7 @@ namespace Microsoft.Build.Locator
         /// <remarks>
         ///     If any Microsoft.Build assemblies are already loaded into the current AppDomain, the value will be false.
         /// </remarks>
-        public static bool CanRegister => !IsRegistered && LoadedMsBuildAssemblies.Any();
+        public static bool CanRegister => !IsRegistered && !LoadedMsBuildAssemblies.Any();
 
         private static IEnumerable<Assembly> LoadedMsBuildAssemblies => AppDomain.CurrentDomain.GetAssemblies().Where(IsMSBuildAssembly);
 
