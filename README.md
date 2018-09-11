@@ -1,6 +1,6 @@
 # CI status
 
-[![Build Status](https://dotnet.visualstudio.com/_apis/public/build/definitions/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/80/badge)](https://dotnet.visualstudio.com/public/_build/index?definitionId=80&branchName=master)
+[![Build Status](https://dev.azure.com/dnceng/public/_apis/build/status/Microsoft/MSBuildLocator/MSBuildLocator-ci)](https://dev.azure.com/dnceng/public/_build/latest?definitionId=80)
 
 # Contributing
 
