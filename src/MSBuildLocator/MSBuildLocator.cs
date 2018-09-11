@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 
 namespace Microsoft.Build.Locator
 {
@@ -16,9 +17,31 @@ namespace Microsoft.Build.Locator
 
         private static readonly string[] s_msBuildAssemblies =
         {
-            "Microsoft.Build", "Microsoft.Build.Framework", "Microsoft.Build.Tasks.Core",
+            "Microsoft.Build",
+            "Microsoft.Build.Framework",
+            "Microsoft.Build.Tasks.Core",
             "Microsoft.Build.Utilities.Core"
         };
+
+        private static ResolveEventHandler registeredHandler;
+
+        // Used to determine when it's time to unregister the registeredHandler.
+        private static int numResolvedAssemblies;
+
+        /// <summary>
+        ///     Gets a value indicating whether an instance of MSBuild is currently registered.
+        /// </summary>
+        public static bool IsRegistered => registeredHandler != null;
+
+        /// <summary>
+        ///     Gets a value indicating whether an instance of MSBuild can be registered.
+        /// </summary>
+        /// <remarks>
+        ///     If any Microsoft.Build assemblies are already loaded into the current AppDomain, the value will be false.
+        /// </remarks>
+        public static bool CanRegister => !IsRegistered && !LoadedMsBuildAssemblies.Any();
+
+        private static IEnumerable<Assembly> LoadedMsBuildAssemblies => AppDomain.CurrentDomain.GetAssemblies().Where(IsMSBuildAssembly);
 
         /// <summary>
         ///     Query for all Visual Studio instances.
@@ -53,6 +76,15 @@ namespace Microsoft.Build.Locator
         public static VisualStudioInstance RegisterDefaults()
         {
             var instance = GetInstances().FirstOrDefault();
+            if (instance == null)
+            {
+                var error = "No instances of MSBuild could be detected." +
+                            Environment.NewLine +
+                            $"Try calling {nameof(RegisterInstance)} or {nameof(RegisterMSBuildPath)} to manually register one.";
+
+                throw new InvalidOperationException(error);
+            }
+
             RegisterInstance(instance);
 
             return instance;
@@ -67,7 +99,9 @@ namespace Microsoft.Build.Locator
         public static void RegisterInstance(VisualStudioInstance instance)
         {
             if (instance == null)
+            {
                 throw new ArgumentNullException(nameof(instance));
+            }
 
             RegisterMSBuildPath(instance.MSBuildPath);
         }
@@ -85,10 +119,19 @@ namespace Microsoft.Build.Locator
         /// </param>
         public static void RegisterMSBuildPath(string msbuildPath)
         {
-            var loadedMSBuildAssemblies = AppDomain.CurrentDomain.GetAssemblies().Where(IsMSBuildAssembly);
-            if (loadedMSBuildAssemblies.Any())
+            if (string.IsNullOrWhiteSpace(msbuildPath))
             {
-                var loadedAssemblyList = string.Join(Environment.NewLine, loadedMSBuildAssemblies.Select(a => a.GetName()));
+                throw new ArgumentException("Value may not be null or whitespace", nameof(msbuildPath));
+            }
+
+            if (!Directory.Exists(msbuildPath))
+            {
+                throw new ArgumentException($"Directory \"{msbuildPath}\" does not exist", nameof(msbuildPath));
+            }
+
+            if (!CanRegister)
+            {
+                var loadedAssemblyList = string.Join(Environment.NewLine, LoadedMsBuildAssemblies.Select(a => a.GetName()));
 
                 var error = $"{typeof(MSBuildLocator)}.{nameof(RegisterInstance)} was called, but MSBuild assemblies were already loaded." +
                     Environment.NewLine +
@@ -100,23 +143,76 @@ namespace Microsoft.Build.Locator
                 throw new InvalidOperationException(error);
             }
 
-            AppDomain.CurrentDomain.AssemblyResolve += (_, eventArgs) =>
+            // AssemblyResolve event can fire multiple times for the same assembly, so keep track of what's already been loaded.
+            var loadedAssemblies = new Dictionary<string, Assembly>(s_msBuildAssemblies.Length);
+
+            // Saving the handler in a static field so it can be unregistered later.
+            registeredHandler = (_, eventArgs) =>
             {
-                var assemblyName = new AssemblyName(eventArgs.Name);
-                if (IsMSBuildAssembly(assemblyName))
+                // Assembly resolution is not thread-safe.
+                lock (loadedAssemblies)
                 {
-                    var targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
-                    return File.Exists(targetAssembly) ? Assembly.LoadFrom(targetAssembly) : null;
+                    var assemblyNameString = eventArgs.Name;
+                    if (loadedAssemblies.TryGetValue(assemblyNameString, out var assembly))
+                    {
+                        return assembly;
+                    }
+
+                    var assemblyName = new AssemblyName(eventArgs.Name);
+                    if (IsMSBuildAssembly(assemblyName))
+                    {
+                        var targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
+                        if (File.Exists(targetAssembly))
+                        {
+                            // Automatically unregister the handler once all supported assemblies have been loaded.
+                            if (Interlocked.Increment(ref numResolvedAssemblies) == s_msBuildAssemblies.Length)
+                            {
+                                Unregister();
+                            }
+
+                            assembly = Assembly.LoadFrom(targetAssembly);
+                            loadedAssemblies.Add(assemblyNameString, assembly);
+                            return assembly;
+                        }
+                    }
+
+                    return null;
+                }
+            };
+
+            AppDomain.CurrentDomain.AssemblyResolve += registeredHandler;
+        }
+
+        /// <summary>
+        ///     Remove assembly resolution previously registered via <see cref="RegisterInstance" />, <see cref="RegisterMSBuildPath" />, or <see cref="RegisterDefaults" />.
+        /// </summary>
+        /// <remarks>
+        ///     This will automatically be called once all supported assemblies are loaded into the current AppDomain and so generally is not necessary to call directly.
+        /// </remarks>
+        public static void Unregister()
+        {
+            if (!IsRegistered)
+            {
+                var error = $"{typeof(MSBuildLocator)}.{nameof(Unregister)} was called, but no MSBuild instance is registered." + Environment.NewLine;
+                if (numResolvedAssemblies == 0)
+                {
+                    error += $"Ensure that {nameof(RegisterInstance)}, {nameof(RegisterMSBuildPath)}, or {nameof(RegisterDefaults)} is called before calling this method.";
+                }
+                else
+                {
+                    error += "Unregistration automatically occurs once all supported assemblies are loaded into the current AppDomain and so generally is not necessary to call directly.";
                 }
 
-                return null;
-            };
+                error += Environment.NewLine +
+                         $"{nameof(IsRegistered)} should be used to determine whether calling {nameof(Unregister)} is a valid operation.";
+
+                throw new InvalidOperationException(error);
+            }
+
+            AppDomain.CurrentDomain.AssemblyResolve -= registeredHandler;
         }
 
-        private static bool IsMSBuildAssembly(Assembly assembly)
-        {
-            return IsMSBuildAssembly(assembly.GetName());
-        }
+        private static bool IsMSBuildAssembly(Assembly assembly) => IsMSBuildAssembly(assembly.GetName());
 
         private static bool IsMSBuildAssembly(AssemblyName assemblyName)
         {
