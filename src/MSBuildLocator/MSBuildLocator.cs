@@ -66,8 +66,16 @@ namespace Microsoft.Build.Locator
         public static IEnumerable<VisualStudioInstance> QueryVisualStudioInstances(
             VisualStudioInstanceQueryOptions options)
         {
-            return GetInstances().Where(i => i.DiscoveryType.HasFlag(options.DiscoveryTypes));
+            return QueryVisualStudioInstances(GetInstances(options), options);
         }
+
+        internal static IEnumerable<VisualStudioInstance> QueryVisualStudioInstances(
+            IEnumerable<VisualStudioInstance> instances,
+            VisualStudioInstanceQueryOptions options)
+        {
+            return instances.Where(i => options.DiscoveryTypes.HasFlag(i.DiscoveryType));
+        }
+
 
         /// <summary>
         ///     Discover instances of Visual Studio and register the first one. See <see cref="RegisterInstance" />.
@@ -75,7 +83,7 @@ namespace Microsoft.Build.Locator
         /// <returns>Instance of Visual Studio found and registered.</returns>
         public static VisualStudioInstance RegisterDefaults()
         {
-            var instance = GetInstances().FirstOrDefault();
+            var instance = GetInstances(VisualStudioInstanceQueryOptions.Default).FirstOrDefault();
             if (instance == null)
             {
                 var error = "No instances of MSBuild could be detected." +
@@ -103,7 +111,25 @@ namespace Microsoft.Build.Locator
                 throw new ArgumentNullException(nameof(instance));
             }
 
-            RegisterMSBuildPath(instance.MSBuildPath);
+            if (instance.DiscoveryType == DiscoveryType.DotNetSdk)
+            {
+                // Since there can be multiple DotNet SDKs on a machine
+                // the MSBuild environment variable are likely not set.
+                // To work around this problem we configure the necessary
+                // variables for a DotNet SDK deployment of MSBuild.
+                // Workaround for https://github.com/dotnet/docfx/issues/1752
+                ApplyDotNetSdkEnvironmentVariables(instance.MSBuildPath);
+
+                // Listening for AssemblyResolve and directing the resolution
+                // results in a StackOverflow. To work around this problem we
+                // load the MSBuild assemblies upfront from the specified path.
+                // Workaround for https://github.com/Microsoft/msbuild/issues/3352
+                LoadFromMSBuildPath(instance.MSBuildPath);
+            }
+            else
+            {
+                RegisterMSBuildPath(instance.MSBuildPath);
+            }
         }
 
         /// <summary>
@@ -212,6 +238,77 @@ namespace Microsoft.Build.Locator
             AppDomain.CurrentDomain.AssemblyResolve -= registeredHandler;
         }
 
+        /// <summary>
+        ///     Ensures the proper MSBuild environment variables are populated for DotNet SDK.
+        /// </summary>
+        /// <param name="msbuildPath">
+        ///     Path to the directory containing the DotNet SDK.
+        /// </param>
+        private static void ApplyDotNetSdkEnvironmentVariables(string dotNetSdkPath)
+        {
+            const string MSBUILD_EXE_PATH = nameof(MSBUILD_EXE_PATH);
+            const string MSBuildExtensionsPath = nameof(MSBuildExtensionsPath);
+            const string MSBuildSDKsPath = nameof(MSBuildSDKsPath);
+
+            var variables = new Dictionary<string, string>
+            {
+                [MSBUILD_EXE_PATH] = dotNetSdkPath + "MSBuild.dll",
+                [MSBuildExtensionsPath] = dotNetSdkPath,
+                [MSBuildSDKsPath] = dotNetSdkPath + "Sdks"
+            };
+
+            foreach (var kvp in variables)
+            {
+                Environment.SetEnvironmentVariable(kvp.Key, kvp.Value);
+            }
+        }
+
+        /// <summary>
+        ///     Load Microsoft.Build core dlls into the current AppDomain from the specified path.
+        /// </summary>
+        /// <param name="msbuildPath">
+        ///     Path to the directory containing a deployment of MSBuild binaries.
+        ///     A minimal MSBuild deployment would be the publish result of the Microsoft.Build.Runtime package.
+        ///
+        ///     In order to restore and build real projects, one needs a deployment that contains the rest of the toolchain (nuget, compilers, etc.).
+        ///     Such deployments can be found in installations such as Visual Studio or dotnet CLI.
+        /// </param>
+        public static void LoadFromMSBuildPath(string msbuildPath)
+        {
+            if (string.IsNullOrWhiteSpace(msbuildPath))
+            {
+                throw new ArgumentException("Value may not be null or whitespace", nameof(msbuildPath));
+            }
+
+            if (!Directory.Exists(msbuildPath))
+            {
+                throw new ArgumentException($"Directory \"{msbuildPath}\" does not exist", nameof(msbuildPath));
+            }
+
+            if (!CanRegister)
+            {
+                var loadedAssemblyList = string.Join(Environment.NewLine, LoadedMsBuildAssemblies.Select(a => a.GetName()));
+
+                var error = $"{typeof(MSBuildLocator)}.{nameof(RegisterInstance)} was called, but MSBuild assemblies were already loaded." +
+                    Environment.NewLine +
+                    $"Ensure that {nameof(RegisterInstance)} is called before any method that directly references types in the Microsoft.Build namespace has been called." +
+                    Environment.NewLine +
+                    "Loaded MSBuild assemblies: " +
+                    loadedAssemblyList;
+
+                throw new InvalidOperationException(error);
+            }
+
+            foreach (var msBuildAssembly in s_msBuildAssemblies)
+            {
+                var targetAssembly = Path.Combine(msbuildPath, msBuildAssembly + ".dll");
+                Assembly.LoadFrom(targetAssembly);
+            }
+
+            // Populate so that IsRegistered returns appropriate value
+            registeredHandler = (_, __) => null;
+        }
+
         private static bool IsMSBuildAssembly(Assembly assembly) => IsMSBuildAssembly(assembly.GetName());
 
         private static bool IsMSBuildAssembly(AssemblyName assemblyName)
@@ -236,16 +333,25 @@ namespace Microsoft.Build.Locator
             return sb.ToString().Equals(MSBuildPublicKeyToken, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static IEnumerable<VisualStudioInstance> GetInstances()
+        private static IEnumerable<VisualStudioInstance> GetInstances(VisualStudioInstanceQueryOptions options)
         {
+#if NET46
             var devConsole = GetDevConsoleInstance();
             if (devConsole != null)
                 yield return devConsole;
 
+    #if FEATURE_VISUALSTUDIOSETUP
             foreach (var instance in VisualStudioLocationHelper.GetInstances())
                 yield return instance;
+    #endif
+#endif
+
+            var dotnetSdk = DotNetSdkLocationHelper.GetInstance(options.WorkingDirectory);
+            if (dotnetSdk != null)
+                yield return dotnetSdk;
         }
 
+#if NET46
         private static VisualStudioInstance GetDevConsoleInstance()
         {
             var path = Environment.GetEnvironmentVariable("VSINSTALLDIR");
@@ -272,5 +378,6 @@ namespace Microsoft.Build.Locator
 
             return null;
         }
+#endif
     }
 }

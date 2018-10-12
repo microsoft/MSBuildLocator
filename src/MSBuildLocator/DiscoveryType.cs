@@ -20,6 +20,11 @@ namespace Microsoft.Build.Locator
         /// <summary>
         ///     Discovery via Visual Studio Setup API.
         /// </summary>
-        VisualStudioSetup = 2
+        VisualStudioSetup = 2,
+
+        /// <summary>
+        ///     Discovery via dotnet --info.
+        /// </summary>
+        DotNetSdk = 4
     }
 }

@@ -18,10 +18,21 @@ namespace Microsoft.Build.Locator
             Version = version;
             DiscoveryType = discoveryType;
 
-            // For VS 16.0 and higher use 'Current' instead of '15.0' in the MSBuild path.
-            MSBuildPath = version.Major >= 16 ?
-                Path.Combine(VisualStudioRootPath, "MSBuild", "Current", "Bin") :
-                Path.Combine(VisualStudioRootPath, "MSBuild", "15.0", "Bin");
+            switch (discoveryType)
+            {
+                case DiscoveryType.DeveloperConsole:
+                case DiscoveryType.VisualStudioSetup:
+                    // For VS 16.0 and higher use 'Current' instead of '15.0' in the MSBuild path.
+                    MSBuildPath = version.Major >= 16 ?
+                        Path.Combine(VisualStudioRootPath, "MSBuild", "Current", "Bin") :
+                        Path.Combine(VisualStudioRootPath, "MSBuild", "15.0", "Bin");
+                    break;
+                case DiscoveryType.DotNetSdk:
+                    MSBuildPath = VisualStudioRootPath;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(discoveryType), discoveryType, null);
+            }
         }
 
         /// <summary>
