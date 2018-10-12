@@ -17,7 +17,11 @@ namespace Microsoft.Build.Locator
             VisualStudioRootPath = path;
             Version = version;
             DiscoveryType = discoveryType;
-            MSBuildPath = Path.Combine(VisualStudioRootPath, "MSBuild", "15.0", "Bin");
+
+            // For VS 16.0 and higher use 'Current' instead of '15.0' in the MSBuild path.
+            MSBuildPath = version.Major >= 16 ?
+                Path.Combine(VisualStudioRootPath, "MSBuild", "Current", "Bin") :
+                Path.Combine(VisualStudioRootPath, "MSBuild", "15.0", "Bin");
         }
 
         /// <summary>
