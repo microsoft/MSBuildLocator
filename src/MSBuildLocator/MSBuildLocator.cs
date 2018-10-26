@@ -9,6 +9,10 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 
+#if NETCOREAPP2_0
+using System.Runtime.Loader;
+#endif
+
 namespace Microsoft.Build.Locator
 {
     public static class MSBuildLocator
@@ -23,7 +27,11 @@ namespace Microsoft.Build.Locator
             "Microsoft.Build.Utilities.Core"
         };
 
+#if NET46
         private static ResolveEventHandler registeredHandler;
+#else
+        private static Func<AssemblyLoadContext, AssemblyName, Assembly> registeredHandler;
+#endif
 
         // Used to determine when it's time to unregister the registeredHandler.
         private static int numResolvedAssemblies;
@@ -119,17 +127,9 @@ namespace Microsoft.Build.Locator
                 // variables for a DotNet SDK deployment of MSBuild.
                 // Workaround for https://github.com/dotnet/docfx/issues/1752
                 ApplyDotNetSdkEnvironmentVariables(instance.MSBuildPath);
+            }
 
-                // Listening for AssemblyResolve and directing the resolution
-                // results in a StackOverflow. To work around this problem we
-                // load the MSBuild assemblies upfront from the specified path.
-                // Workaround for https://github.com/Microsoft/msbuild/issues/3352
-                LoadFromMSBuildPath(instance.MSBuildPath);
-            }
-            else
-            {
-                RegisterMSBuildPath(instance.MSBuildPath);
-            }
+            RegisterMSBuildPath(instance.MSBuildPath);
         }
 
         /// <summary>
@@ -172,6 +172,7 @@ namespace Microsoft.Build.Locator
             // AssemblyResolve event can fire multiple times for the same assembly, so keep track of what's already been loaded.
             var loadedAssemblies = new Dictionary<string, Assembly>(s_msBuildAssemblies.Length);
 
+#if NET46
             // Saving the handler in a static field so it can be unregistered later.
             registeredHandler = (_, eventArgs) =>
             {
@@ -184,29 +185,54 @@ namespace Microsoft.Build.Locator
                         return assembly;
                     }
 
-                    var assemblyName = new AssemblyName(eventArgs.Name);
-                    if (IsMSBuildAssembly(assemblyName))
-                    {
-                        var targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
-                        if (File.Exists(targetAssembly))
-                        {
-                            // Automatically unregister the handler once all supported assemblies have been loaded.
-                            if (Interlocked.Increment(ref numResolvedAssemblies) == s_msBuildAssemblies.Length)
-                            {
-                                Unregister();
-                            }
-
-                            assembly = Assembly.LoadFrom(targetAssembly);
-                            loadedAssemblies.Add(assemblyNameString, assembly);
-                            return assembly;
-                        }
-                    }
-
-                    return null;
+                    var assemblyName = new AssemblyName(assemblyNameString);
+                    return TryLoadAssembly(assemblyName);
                 }
             };
 
             AppDomain.CurrentDomain.AssemblyResolve += registeredHandler;
+#else
+            // Saving the handler in a static field so it can be unregistered later.
+            registeredHandler = (assemblyLoadContext, assemblyName) =>
+            {
+                // Assembly resolution is not thread-safe.
+                lock (loadedAssemblies)
+                {
+                    if (loadedAssemblies.TryGetValue(assemblyName.FullName, out var assembly))
+                    {
+                        return assembly;
+                    }         
+            
+                    return TryLoadAssembly(assemblyName);
+                }
+            };
+
+            AssemblyLoadContext.Default.Resolving += registeredHandler;
+#endif
+
+            return;
+
+            Assembly TryLoadAssembly(AssemblyName assemblyName)
+            {
+                if (IsMSBuildAssembly(assemblyName))
+                {
+                    var targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
+                    if (File.Exists(targetAssembly))
+                    {
+                        // Automatically unregister the handler once all supported assemblies have been loaded.
+                        if (Interlocked.Increment(ref numResolvedAssemblies) == s_msBuildAssemblies.Length)
+                        {
+                            Unregister();
+                        }
+
+                        var assembly = Assembly.LoadFrom(targetAssembly);
+                        loadedAssemblies.Add(assemblyName.FullName, assembly);
+                        return assembly;
+                    }
+                }
+
+                return null;
+            }
         }
 
         /// <summary>
@@ -235,7 +261,11 @@ namespace Microsoft.Build.Locator
                 throw new InvalidOperationException(error);
             }
 
+#if NET46
             AppDomain.CurrentDomain.AssemblyResolve -= registeredHandler;
+#else
+            AssemblyLoadContext.Default.Resolving -= registeredHandler;
+#endif
         }
 
         /// <summary>
@@ -302,7 +332,8 @@ namespace Microsoft.Build.Locator
             foreach (var msBuildAssembly in s_msBuildAssemblies)
             {
                 var targetAssembly = Path.Combine(msbuildPath, msBuildAssembly + ".dll");
-                Assembly.LoadFrom(targetAssembly);
+                var assemblyName = AssemblyName.GetAssemblyName(targetAssembly);
+                Assembly.Load(assemblyName);
             }
 
             // Populate so that IsRegistered returns appropriate value
@@ -346,9 +377,11 @@ namespace Microsoft.Build.Locator
     #endif
 #endif
 
+#if NETCOREAPP2_0
             var dotnetSdk = DotNetSdkLocationHelper.GetInstance(options.WorkingDirectory);
             if (dotnetSdk != null)
                 yield return dotnetSdk;
+#endif
         }
 
 #if NET46

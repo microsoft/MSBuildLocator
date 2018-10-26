@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if NETCOREAPP2_0
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -100,3 +102,4 @@ namespace Microsoft.Build.Locator
         }
     }
 }
+#endif

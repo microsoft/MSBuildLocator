@@ -17,9 +17,11 @@ namespace Microsoft.Build.Locator
         {
             DiscoveryTypes =
 #if FEATURE_VISUALSTUDIOSETUP
-                DiscoveryType.DeveloperConsole | DiscoveryType.VisualStudioSetup |
+                DiscoveryType.DeveloperConsole | DiscoveryType.VisualStudioSetup
 #endif
+#if NETCOREAPP2_0
                 DiscoveryType.DotNetSdk
+#endif
         };
 
         /// <summary>
