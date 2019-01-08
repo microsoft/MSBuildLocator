@@ -1,4 +1,4 @@
-﻿<Project>
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Target Name="EnsureMSBuildAssembliesNotCopied" AfterTargets="Build" Condition="'$(DisableMSBuildAssemblyCopyCheck)' != 'true'">
     <ItemGroup>
       <MSBuildPackagesWithoutPrivateAssets
