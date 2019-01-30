@@ -84,7 +84,6 @@ namespace Microsoft.Build.Locator
             return instances.Where(i => options.DiscoveryTypes.HasFlag(i.DiscoveryType));
         }
 
-
         /// <summary>
         ///     Discover instances of Visual Studio and register the first one. See <see cref="RegisterInstance" />.
         /// </summary>
@@ -291,53 +290,6 @@ namespace Microsoft.Build.Locator
             {
                 Environment.SetEnvironmentVariable(kvp.Key, kvp.Value);
             }
-        }
-
-        /// <summary>
-        ///     Load Microsoft.Build core dlls into the current AppDomain from the specified path.
-        /// </summary>
-        /// <param name="msbuildPath">
-        ///     Path to the directory containing a deployment of MSBuild binaries.
-        ///     A minimal MSBuild deployment would be the publish result of the Microsoft.Build.Runtime package.
-        ///
-        ///     In order to restore and build real projects, one needs a deployment that contains the rest of the toolchain (nuget, compilers, etc.).
-        ///     Such deployments can be found in installations such as Visual Studio or dotnet CLI.
-        /// </param>
-        public static void LoadFromMSBuildPath(string msbuildPath)
-        {
-            if (string.IsNullOrWhiteSpace(msbuildPath))
-            {
-                throw new ArgumentException("Value may not be null or whitespace", nameof(msbuildPath));
-            }
-
-            if (!Directory.Exists(msbuildPath))
-            {
-                throw new ArgumentException($"Directory \"{msbuildPath}\" does not exist", nameof(msbuildPath));
-            }
-
-            if (!CanRegister)
-            {
-                var loadedAssemblyList = string.Join(Environment.NewLine, LoadedMsBuildAssemblies.Select(a => a.GetName()));
-
-                var error = $"{typeof(MSBuildLocator)}.{nameof(RegisterInstance)} was called, but MSBuild assemblies were already loaded." +
-                    Environment.NewLine +
-                    $"Ensure that {nameof(RegisterInstance)} is called before any method that directly references types in the Microsoft.Build namespace has been called." +
-                    Environment.NewLine +
-                    "Loaded MSBuild assemblies: " +
-                    loadedAssemblyList;
-
-                throw new InvalidOperationException(error);
-            }
-
-            foreach (var msBuildAssembly in s_msBuildAssemblies)
-            {
-                var targetAssembly = Path.Combine(msbuildPath, msBuildAssembly + ".dll");
-                var assemblyName = AssemblyName.GetAssemblyName(targetAssembly);
-                Assembly.Load(assemblyName);
-            }
-
-            // Populate so that IsRegistered returns appropriate value
-            registeredHandler = (_, __) => null;
         }
 
         private static bool IsMSBuildAssembly(Assembly assembly) => IsMSBuildAssembly(assembly.GetName());
