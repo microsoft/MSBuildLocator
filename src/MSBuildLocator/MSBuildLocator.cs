@@ -28,9 +28,9 @@ namespace Microsoft.Build.Locator
         };
 
 #if NET46
-        private static ResolveEventHandler registeredHandler;
+        private static ResolveEventHandler s_registeredHandler;
 #else
-        private static Func<AssemblyLoadContext, AssemblyName, Assembly> registeredHandler;
+        private static Func<AssemblyLoadContext, AssemblyName, Assembly> s_registeredHandler;
 #endif
 
         // Used to determine when it's time to unregister the registeredHandler.
@@ -39,7 +39,7 @@ namespace Microsoft.Build.Locator
         /// <summary>
         ///     Gets a value indicating whether an instance of MSBuild is currently registered.
         /// </summary>
-        public static bool IsRegistered => registeredHandler != null;
+        public static bool IsRegistered => s_registeredHandler != null;
 
         /// <summary>
         ///     Gets a value indicating whether an instance of MSBuild can be registered.
@@ -120,11 +120,8 @@ namespace Microsoft.Build.Locator
 
             if (instance.DiscoveryType == DiscoveryType.DotNetSdk)
             {
-                // Since there can be multiple DotNet SDKs on a machine
-                // the MSBuild environment variable are likely not set.
-                // To work around this problem we configure the necessary
-                // variables for a DotNet SDK deployment of MSBuild.
-                // Workaround for https://github.com/dotnet/docfx/issues/1752
+                // The dotnet cli sets up these environment variables when msbuild is invoked via `dotnet`,
+                // but we are using msbuild dlls directly and therefore need to mimic that.
                 ApplyDotNetSdkEnvironmentVariables(instance.MSBuildPath);
             }
 
@@ -171,66 +168,56 @@ namespace Microsoft.Build.Locator
             // AssemblyResolve event can fire multiple times for the same assembly, so keep track of what's already been loaded.
             var loadedAssemblies = new Dictionary<string, Assembly>(s_msBuildAssemblies.Length);
 
+            // Saving the handler in a static field so it can be unregistered later.
 #if NET46
-            // Saving the handler in a static field so it can be unregistered later.
-            registeredHandler = (_, eventArgs) =>
+            s_registeredHandler = (_, eventArgs) =>
             {
-                // Assembly resolution is not thread-safe.
-                lock (loadedAssemblies)
-                {
-                    var assemblyNameString = eventArgs.Name;
-                    if (loadedAssemblies.TryGetValue(assemblyNameString, out var assembly))
-                    {
-                        return assembly;
-                    }
-
-                    var assemblyName = new AssemblyName(assemblyNameString);
-                    return TryLoadAssembly(assemblyName);
-                }
+                var assemblyName = new AssemblyName(eventArgs.Name);
+                return TryLoadAssembly(new AssemblyName(eventArgs.Name));
             };
 
-            AppDomain.CurrentDomain.AssemblyResolve += registeredHandler;
+            AppDomain.CurrentDomain.AssemblyResolve += s_registeredHandler;
 #else
-            // Saving the handler in a static field so it can be unregistered later.
-            registeredHandler = (assemblyLoadContext, assemblyName) =>
+            s_registeredHandler = (assemblyLoadContext, assemblyName) => 
             {
-                // Assembly resolution is not thread-safe.
-                lock (loadedAssemblies)
-                {
-                    if (loadedAssemblies.TryGetValue(assemblyName.FullName, out var assembly))
-                    {
-                        return assembly;
-                    }         
-            
-                    return TryLoadAssembly(assemblyName);
-                }
+                return TryLoadAssembly(assemblyName);
             };
 
-            AssemblyLoadContext.Default.Resolving += registeredHandler;
+            AssemblyLoadContext.Default.Resolving += s_registeredHandler;
 #endif
 
             return;
 
             Assembly TryLoadAssembly(AssemblyName assemblyName)
             {
-                if (IsMSBuildAssembly(assemblyName))
+                // Assembly resolution is not thread-safe.
+                lock (loadedAssemblies)
                 {
-                    var targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
-                    if (File.Exists(targetAssembly))
+                    Assembly assembly;
+                    if (loadedAssemblies.TryGetValue(assemblyName.FullName, out assembly))
                     {
-                        // Automatically unregister the handler once all supported assemblies have been loaded.
-                        if (Interlocked.Increment(ref numResolvedAssemblies) == s_msBuildAssemblies.Length)
-                        {
-                            Unregister();
-                        }
-
-                        var assembly = Assembly.LoadFrom(targetAssembly);
-                        loadedAssemblies.Add(assemblyName.FullName, assembly);
                         return assembly;
                     }
-                }
 
-                return null;
+                    if (IsMSBuildAssembly(assemblyName))
+                    {
+                        var targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
+                        if (File.Exists(targetAssembly))
+                        {
+                            // Automatically unregister the handler once all supported assemblies have been loaded.
+                            if (Interlocked.Increment(ref numResolvedAssemblies) == s_msBuildAssemblies.Length)
+                            {
+                                Unregister();
+                            }
+
+                            assembly = Assembly.LoadFrom(targetAssembly);
+                            loadedAssemblies.Add(assemblyName.FullName, assembly);
+                            return assembly;
+                        }
+                    }
+
+                    return null;
+                }
             }
         }
 
@@ -261,9 +248,9 @@ namespace Microsoft.Build.Locator
             }
 
 #if NET46
-            AppDomain.CurrentDomain.AssemblyResolve -= registeredHandler;
+            AppDomain.CurrentDomain.AssemblyResolve -= s_registeredHandler;
 #else
-            AssemblyLoadContext.Default.Resolving -= registeredHandler;
+            AssemblyLoadContext.Default.Resolving -= s_registeredHandler;
 #endif
         }
 
