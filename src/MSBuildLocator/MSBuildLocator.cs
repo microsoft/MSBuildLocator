@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 
-#if NETCOREAPP2_0
+#if NETCOREAPP
 using System.Runtime.Loader;
 #endif
 
@@ -316,7 +316,7 @@ namespace Microsoft.Build.Locator
     #endif
 #endif
 
-#if NETCOREAPP2_0
+#if NETCOREAPP
             var dotnetSdk = DotNetSdkLocationHelper.GetInstance(options.WorkingDirectory);
             if (dotnetSdk != null)
                 yield return dotnetSdk;

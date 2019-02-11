@@ -16,7 +16,7 @@ namespace Microsoft.Build.Locator.Tests
 
             instance.ShouldNotBeNull();
 
-#if NETCOREAPP2_0
+#if NETCOREAPP
             instance.DiscoveryType.ShouldBe(DiscoveryType.DotNetSdk);
 #else
             instance.DiscoveryType.ShouldNotBe(DiscoveryType.DotNetSdk);

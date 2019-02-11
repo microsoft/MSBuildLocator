@@ -19,7 +19,7 @@ namespace Microsoft.Build.Locator
 #if FEATURE_VISUALSTUDIOSETUP
                 DiscoveryType.DeveloperConsole | DiscoveryType.VisualStudioSetup
 #endif
-#if NETCOREAPP2_0
+#if NETCOREAPP
                 DiscoveryType.DotNetSdk
 #endif
         };
@@ -30,7 +30,7 @@ namespace Microsoft.Build.Locator
         public DiscoveryType DiscoveryTypes { get; set; }
 
         /// <summary>
-        ///     A working directory to use when querying for instances.
+        ///     Working directory to use when querying for instances. Ensure it is the project directory to pick up the right global.json.
         /// </summary>
         public string WorkingDirectory { get; set; } = Environment.CurrentDirectory;
     }
