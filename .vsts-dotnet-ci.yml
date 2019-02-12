@@ -21,12 +21,12 @@ steps:
   displayName: Set version number
 
 - task: MSBuild@1
-  displayName: /t:Pack
+  displayName: Build and Pack
   inputs:
     solution: MSBuildLocator.sln
     platform: '$(BuildPlatform)'
     configuration: '$(BuildConfiguration)'
-    msbuildArguments: '/t:Pack /restore'
+    msbuildArguments: '/t:Pack;Build /restore'
     createLogFile: true
 
 - task: CopyFiles@2
