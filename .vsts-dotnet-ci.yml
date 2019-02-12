@@ -2,11 +2,16 @@ pool:
   name: Hosted VS2017
   demands: msbuild
 
+strategy:
+  matrix:
+    Debug:
+      BuildConfiguration: Debug
+    Release:
+      BuildConfiguration: Release
+
 variables:
   "Parameters.solution": MSBuildLocator.sln
-  BuildConfiguration: Release
   SignType: Test
-  BuildPlatform: ''
 
 steps:
 - task: DotNetCoreInstaller@0
@@ -24,7 +29,6 @@ steps:
   displayName: Build and Pack
   inputs:
     solution: MSBuildLocator.sln
-    platform: '$(BuildPlatform)'
     configuration: '$(BuildConfiguration)'
     msbuildArguments: '/t:Pack;Build /restore'
     createLogFile: true
