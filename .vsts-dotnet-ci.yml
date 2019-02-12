@@ -79,7 +79,7 @@ steps:
 
 - task: CopyFiles@2
   displayName: Collect logs
-  condition: eq(variables['system.pullrequest.isfork'], false)
+  condition: always()
   inputs:
     SourceFolder: ''
     Contents: '**\*.log'
@@ -88,7 +88,7 @@ steps:
 
 - task: PublishBuildArtifacts@1
   displayName: Upload Logs
-  condition: eq(variables['system.pullrequest.isfork'], false)
+  condition: always()
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/logs'
     ArtifactName: logs
