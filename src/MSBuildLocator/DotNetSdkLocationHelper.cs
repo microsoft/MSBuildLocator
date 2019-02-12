@@ -14,7 +14,7 @@ namespace Microsoft.Build.Locator
     internal static class DotNetSdkLocationHelper
     {
         private static readonly Regex DotNetBasePathRegex = new Regex("Base Path:(.*)$", RegexOptions.Multiline);
-        private static readonly Regex VersionRegex = new Regex(@"^(\d+).(\d+).(\d+)", RegexOptions.Multiline);
+        private static readonly Regex VersionRegex = new Regex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline);
 
         public static VisualStudioInstance GetInstance(string workingDirectory)
         {
