@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFrameworks>net471;netcoreapp2.1</TargetFrameworks>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -16,8 +16,8 @@
       These are intentionally not the most up-to-date version of the MSBuild packages to show that they're
       only used to compile against and that the runtime assemblies used are chosen by MSBuildLocator.
     -->
-    <PackageReference Include="Microsoft.Build" Version="15.5.180" />
-    <PackageReference Include="Microsoft.Build.Framework" Version="15.5.180" />
+    <PackageReference Include="Microsoft.Build" Version="15.5.180" ExcludeAssets="Runtime" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="15.5.180" ExcludeAssets="Runtime" />
   </ItemGroup>
 
   <ItemGroup>

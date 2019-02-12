@@ -9,6 +9,10 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 
+#if NETCOREAPP
+using System.Runtime.Loader;
+#endif
+
 namespace Microsoft.Build.Locator
 {
     public static class MSBuildLocator
@@ -23,7 +27,11 @@ namespace Microsoft.Build.Locator
             "Microsoft.Build.Utilities.Core"
         };
 
-        private static ResolveEventHandler registeredHandler;
+#if NET46
+        private static ResolveEventHandler s_registeredHandler;
+#else
+        private static Func<AssemblyLoadContext, AssemblyName, Assembly> s_registeredHandler;
+#endif
 
         // Used to determine when it's time to unregister the registeredHandler.
         private static int numResolvedAssemblies;
@@ -31,7 +39,7 @@ namespace Microsoft.Build.Locator
         /// <summary>
         ///     Gets a value indicating whether an instance of MSBuild is currently registered.
         /// </summary>
-        public static bool IsRegistered => registeredHandler != null;
+        public static bool IsRegistered => s_registeredHandler != null;
 
         /// <summary>
         ///     Gets a value indicating whether an instance of MSBuild can be registered.
@@ -66,7 +74,14 @@ namespace Microsoft.Build.Locator
         public static IEnumerable<VisualStudioInstance> QueryVisualStudioInstances(
             VisualStudioInstanceQueryOptions options)
         {
-            return GetInstances().Where(i => i.DiscoveryType.HasFlag(options.DiscoveryTypes));
+            return QueryVisualStudioInstances(GetInstances(options), options);
+        }
+
+        internal static IEnumerable<VisualStudioInstance> QueryVisualStudioInstances(
+            IEnumerable<VisualStudioInstance> instances,
+            VisualStudioInstanceQueryOptions options)
+        {
+            return instances.Where(i => options.DiscoveryTypes.HasFlag(i.DiscoveryType));
         }
 
         /// <summary>
@@ -75,7 +90,7 @@ namespace Microsoft.Build.Locator
         /// <returns>Instance of Visual Studio found and registered.</returns>
         public static VisualStudioInstance RegisterDefaults()
         {
-            var instance = GetInstances().FirstOrDefault();
+            var instance = GetInstances(VisualStudioInstanceQueryOptions.Default).FirstOrDefault();
             if (instance == null)
             {
                 var error = "No instances of MSBuild could be detected." +
@@ -101,6 +116,13 @@ namespace Microsoft.Build.Locator
             if (instance == null)
             {
                 throw new ArgumentNullException(nameof(instance));
+            }
+
+            if (instance.DiscoveryType == DiscoveryType.DotNetSdk)
+            {
+                // The dotnet cli sets up these environment variables when msbuild is invoked via `dotnet`,
+                // but we are using msbuild dlls directly and therefore need to mimic that.
+                ApplyDotNetSdkEnvironmentVariables(instance.MSBuildPath);
             }
 
             RegisterMSBuildPath(instance.MSBuildPath);
@@ -147,18 +169,36 @@ namespace Microsoft.Build.Locator
             var loadedAssemblies = new Dictionary<string, Assembly>(s_msBuildAssemblies.Length);
 
             // Saving the handler in a static field so it can be unregistered later.
-            registeredHandler = (_, eventArgs) =>
+#if NET46
+            s_registeredHandler = (_, eventArgs) =>
+            {
+                var assemblyName = new AssemblyName(eventArgs.Name);
+                return TryLoadAssembly(new AssemblyName(eventArgs.Name));
+            };
+
+            AppDomain.CurrentDomain.AssemblyResolve += s_registeredHandler;
+#else
+            s_registeredHandler = (assemblyLoadContext, assemblyName) => 
+            {
+                return TryLoadAssembly(assemblyName);
+            };
+
+            AssemblyLoadContext.Default.Resolving += s_registeredHandler;
+#endif
+
+            return;
+
+            Assembly TryLoadAssembly(AssemblyName assemblyName)
             {
                 // Assembly resolution is not thread-safe.
                 lock (loadedAssemblies)
                 {
-                    var assemblyNameString = eventArgs.Name;
-                    if (loadedAssemblies.TryGetValue(assemblyNameString, out var assembly))
+                    Assembly assembly;
+                    if (loadedAssemblies.TryGetValue(assemblyName.FullName, out assembly))
                     {
                         return assembly;
                     }
 
-                    var assemblyName = new AssemblyName(eventArgs.Name);
                     if (IsMSBuildAssembly(assemblyName))
                     {
                         var targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
@@ -171,16 +211,14 @@ namespace Microsoft.Build.Locator
                             }
 
                             assembly = Assembly.LoadFrom(targetAssembly);
-                            loadedAssemblies.Add(assemblyNameString, assembly);
+                            loadedAssemblies.Add(assemblyName.FullName, assembly);
                             return assembly;
                         }
                     }
 
                     return null;
                 }
-            };
-
-            AppDomain.CurrentDomain.AssemblyResolve += registeredHandler;
+            }
         }
 
         /// <summary>
@@ -209,7 +247,36 @@ namespace Microsoft.Build.Locator
                 throw new InvalidOperationException(error);
             }
 
-            AppDomain.CurrentDomain.AssemblyResolve -= registeredHandler;
+#if NET46
+            AppDomain.CurrentDomain.AssemblyResolve -= s_registeredHandler;
+#else
+            AssemblyLoadContext.Default.Resolving -= s_registeredHandler;
+#endif
+        }
+
+        /// <summary>
+        ///     Ensures the proper MSBuild environment variables are populated for DotNet SDK.
+        /// </summary>
+        /// <param name="msbuildPath">
+        ///     Path to the directory containing the DotNet SDK.
+        /// </param>
+        private static void ApplyDotNetSdkEnvironmentVariables(string dotNetSdkPath)
+        {
+            const string MSBUILD_EXE_PATH = nameof(MSBUILD_EXE_PATH);
+            const string MSBuildExtensionsPath = nameof(MSBuildExtensionsPath);
+            const string MSBuildSDKsPath = nameof(MSBuildSDKsPath);
+
+            var variables = new Dictionary<string, string>
+            {
+                [MSBUILD_EXE_PATH] = dotNetSdkPath + "MSBuild.dll",
+                [MSBuildExtensionsPath] = dotNetSdkPath,
+                [MSBuildSDKsPath] = dotNetSdkPath + "Sdks"
+            };
+
+            foreach (var kvp in variables)
+            {
+                Environment.SetEnvironmentVariable(kvp.Key, kvp.Value);
+            }
         }
 
         private static bool IsMSBuildAssembly(Assembly assembly) => IsMSBuildAssembly(assembly.GetName());
@@ -236,16 +303,27 @@ namespace Microsoft.Build.Locator
             return sb.ToString().Equals(MSBuildPublicKeyToken, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static IEnumerable<VisualStudioInstance> GetInstances()
+        private static IEnumerable<VisualStudioInstance> GetInstances(VisualStudioInstanceQueryOptions options)
         {
+#if NET46
             var devConsole = GetDevConsoleInstance();
             if (devConsole != null)
                 yield return devConsole;
 
+    #if FEATURE_VISUALSTUDIOSETUP
             foreach (var instance in VisualStudioLocationHelper.GetInstances())
                 yield return instance;
+    #endif
+#endif
+
+#if NETCOREAPP
+            var dotnetSdk = DotNetSdkLocationHelper.GetInstance(options.WorkingDirectory);
+            if (dotnetSdk != null)
+                yield return dotnetSdk;
+#endif
         }
 
+#if NET46
         private static VisualStudioInstance GetDevConsoleInstance()
         {
             var path = Environment.GetEnvironmentVariable("VSINSTALLDIR");
@@ -272,5 +350,6 @@ namespace Microsoft.Build.Locator
 
             return null;
         }
+#endif
     }
 }
