@@ -14,6 +14,7 @@ namespace Microsoft.Build.Locator
     internal static class DotNetSdkLocationHelper
     {
         private static readonly Regex DotNetBasePathRegex = new Regex("Base Path:(.*)$", RegexOptions.Multiline);
+        private static readonly Regex VersionRegex = new Regex(@"^(\d+).(\d+).(\d+)", RegexOptions.Multiline);
 
         public static VisualStudioInstance GetInstance(string workingDirectory)
         {
@@ -29,19 +30,32 @@ namespace Microsoft.Build.Locator
                 return null;
             }
 
-            FileInfo dotNetAssemblyPath = new FileInfo(Path.Combine(dotNetSdkPath, "dotnet.dll"));
-            if (!dotNetAssemblyPath.Exists)
+            string versionPath = Path.Combine(dotNetSdkPath, ".version");
+            if (!File.Exists(versionPath))
             {
                 return null;
             }
 
-            FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(dotNetAssemblyPath.FullName);
+            string versionContent = File.ReadAllText(versionPath);
+            Match versionMatch = VersionRegex.Match(versionContent);
+
+            if (!versionMatch.Success)
+            {
+                return null;
+            }
+
+            if (!int.TryParse(versionMatch.Groups[1].Value, out int major) ||
+                !int.TryParse(versionMatch.Groups[2].Value, out int minor) ||
+                !int.TryParse(versionMatch.Groups[3].Value, out int patch))
+            {
+                return null;
+            }
 
             return new VisualStudioInstance(
-               name: ".NET Core SDK",
-               path: dotNetSdkPath,
-               version: new Version(fileVersionInfo.FileMajorPart, fileVersionInfo.FileMinorPart, fileVersionInfo.FileBuildPart),
-               discoveryType: DiscoveryType.DotNetSdk);
+                name: ".NET Core SDK",
+                path: dotNetSdkPath,
+                version: new Version(major, minor, patch),
+                discoveryType: DiscoveryType.DotNetSdk);
         }
 
         private static string GetDotNetBasePath(string workingDirectory)
