@@ -77,6 +77,13 @@ steps:
     ArtifactName: pkg
     ArtifactType: Container
 
+- task: DotNetCoreCLI@2
+  displayName: Test
+  inputs:
+    command: test
+    arguments: '--configuration $(BuildConfiguration) --no-build'
+    publishTestResults: true
+
 - task: CopyFiles@2
   displayName: Collect logs
   condition: always()
