@@ -9,13 +9,16 @@ variables:
   BuildPlatform: ''
 
 steps:
-- task: MSBuild@1
-  displayName: Set version number
-  condition: eq(variables['system.pullrequest.isfork'], false)
+- task: DotNetCoreInstaller@0
+  displayName: Install .NET Core SDK
   inputs:
-    solution: 'src\EstablishVersioning\EstablishVersioning.csproj'
-    msbuildArguments: '/restore'
-    logProjectEvents: true
+      packageType: sdk
+      version: 2.1.503
+
+- script: |
+    dotnet tool install --tool-path bin\tools nbgv
+    bin\tools\nbgv cloud -p src -a
+  displayName: Set version number
 
 - task: MSBuild@1
   displayName: /t:Pack
