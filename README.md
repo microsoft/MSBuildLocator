@@ -4,7 +4,7 @@
 
 # Documentation
 
-The documentation is located on the official Microsoft documentation site, in [this](https://docs.microsoft.com/en-us/visualstudio/msbuild/updating-an-existing-application#use-microsoftbuildlocator) page.
+Documentation is located on the official Microsoft documentation site: [Use Microsoft.Build.Locator](https://docs.microsoft.com/visualstudio/msbuild/updating-an-existing-application#use-microsoftbuildlocator).
 
 # Contributing
 
