@@ -345,7 +345,10 @@ namespace Microsoft.Build.Locator
                     Version.TryParse(versionString, out version);
                 }
 
-                return new VisualStudioInstance("DEVCONSOLE", path, version, DiscoveryType.DeveloperConsole);
+                if(version != null)
+                {
+                    return new VisualStudioInstance("DEVCONSOLE", path, version, DiscoveryType.DeveloperConsole);
+                }
             }
 
             return null;
