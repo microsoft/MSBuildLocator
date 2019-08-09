@@ -23,10 +23,10 @@
   <ItemGroup Condition="'$(TargetFramework)'=='net46'">
     <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="1.16.30" PrivateAssets="all" />
     <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes" Version="15.0.21" PrivateAssets="all" />
-    <PackageReference Include="MicroBuild.Core" Version="0.3.0" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="MicroBuild.Core" Version="0.3.0" PrivateAssets="all" />
     <Content Include="build\Microsoft.Build.Locator.props">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <PackagePath>build\</PackagePath>
