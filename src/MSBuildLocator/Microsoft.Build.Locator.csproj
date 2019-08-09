@@ -39,7 +39,7 @@
 
   <ItemGroup>
     <FilesToSign Include="$(OutDir)\Microsoft.Build.Locator.dll">
-      <Authenticode>Microsoft</Authenticode>
+      <Authenticode>Microsoft400</Authenticode>
     </FilesToSign>
   </ItemGroup>
 
