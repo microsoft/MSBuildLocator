@@ -20,38 +20,6 @@ steps:
   inputs:
     signType: '$(SignType)'
 
-- task: DotNetCoreInstaller@0
-  displayName: 'Use .NET Core sdk 2.0.0'
-  inputs:
-    version: 2.0.0
-  enabled: false
-
-- task: DotNetCoreCLI@1
-  displayName: 'dotnet pack'
-  inputs:
-    command: pack
-    projects: MSBuildLocator.sln
-    arguments: '/p:Configuration=$(BuildConfiguration) /p:SignType=$(SignType)'
-  enabled: false
-
-- task: MSBuild@1
-  displayName: '/t:Restore'
-  inputs:
-    solution: MSBuildLocator.sln
-    platform: '$(BuildPlatform)'
-    configuration: '$(BuildConfiguration)'
-    msbuildArguments: '/t:Restore'
-  enabled: false
-
-- task: MSBuild@1
-  displayName: '/t:Build'
-  inputs:
-    solution: MSBuildLocator.sln
-    platform: '$(BuildPlatform)'
-    configuration: '$(BuildConfiguration)'
-    msbuildArguments: '/t:Build /p:SignType=$(SignType) /restore'
-  enabled: false
-
 - task: MSBuild@1
   displayName: '/t:Pack'
   inputs:
@@ -67,13 +35,6 @@ steps:
     Contents: '**\*.pdb'
     TargetFolder: '$(Build.ArtifactStagingDirectory)/symbols'
     CleanTargetFolder: true
-
-- task: PublishSymbols@1
-  displayName: 'Index Sources'
-  inputs:
-    SearchPattern: '**/*.pdb'
-    SymbolsFolder: '$(Build.ArtifactStagingDirectory)\symbols'
-  enabled: false
 
 - task: PublishBuildArtifacts@1
   displayName: 'Upload Symbols Artifact'
@@ -99,14 +60,6 @@ steps:
     ArtifactName: pkg
     ArtifactType: Container
 
-- task: ms-vscs-artifact.build-tasks.artifactSymbolTask-1.artifactSymbolTask@0
-  displayName: 'Publish Symbols to Artifact Services'
-  inputs:
-    symbolServiceURI: 'https://microsoft.artifacts.visualstudio.com/DefaultCollection'
-    sourcePath: '$(Build.ArtifactStagingDirectory)\symbols'
-    usePat: false
-  enabled: false
-
 - task: CopyPublishBuildArtifacts@1
   displayName: 'Upload MicroBuildOutputs to drop'
   inputs:
@@ -115,13 +68,6 @@ steps:
     ArtifactName: MicroBuildOutputs
     ArtifactType: Container
   continueOnError: true
-
-- task: NuGetPublisher@0
-  displayName: 'Publish Nuget packages to Myget'
-  inputs:
-    searchPattern: '$(NugetPackagesPath)\**.nupkg'
-    connectedServiceName: 'dotnet.myget.org msbuild'
-  enabled: false
 
 - task: CopyPublishBuildArtifacts@1
   displayName: 'Upload logs to drop'
