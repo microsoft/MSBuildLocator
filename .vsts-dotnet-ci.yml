@@ -14,8 +14,8 @@ variables:
   SignType: Test
 
 steps:
-- task: DotNetCoreInstaller@0
-  displayName: Install .NET Core SDK
+- task: UseDotNet@2
+  displayName: Use .NET Core SDK
   inputs:
       packageType: sdk
       version: 2.1.503
