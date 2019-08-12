@@ -18,7 +18,7 @@ steps:
     solution: MSBuildLocator.sln
     platform: '$(BuildPlatform)'
     configuration: '$(BuildConfiguration)'
-    msbuildArguments: '/t:Pack /restore'
+    msbuildArguments: '/t:Pack /restore -binaryLogger'
 
 - task: CopyFiles@2
   displayName: 'Collect Symbols'
@@ -64,7 +64,7 @@ steps:
 - task: CopyPublishBuildArtifacts@1
   displayName: 'Upload logs to drop'
   inputs:
-    Contents: '**\*.log'
+    Contents: '**\*.*log'
     ArtifactName: logs
     ArtifactType: Container
   condition: succeededOrFailed()
