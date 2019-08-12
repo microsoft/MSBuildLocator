@@ -18,7 +18,7 @@ steps:
     solution: MSBuildLocator.sln
     platform: '$(BuildPlatform)'
     configuration: '$(BuildConfiguration)'
-    msbuildArguments: '/t:Pack /restore -binaryLogger:$(Build.ArtifactStagingDirectory)\logs\Pack.binlog'
+    msbuildArguments: '/t:Pack /restore -binaryLogger:$(Build.SourcesDirectory)\Pack.binlog'
 
 - task: CopyFiles@2
   displayName: 'Collect Symbols'
