@@ -310,15 +310,14 @@ namespace Microsoft.Build.Locator
             if (devConsole != null)
                 yield return devConsole;
 
-    #if FEATURE_VISUALSTUDIOSETUP
+#if FEATURE_VISUALSTUDIOSETUP
             foreach (var instance in VisualStudioLocationHelper.GetInstances())
                 yield return instance;
-    #endif
+#endif
 #endif
 
 #if NETCOREAPP
-            var dotnetSdk = DotNetSdkLocationHelper.GetInstance(options.WorkingDirectory);
-            if (dotnetSdk != null)
+            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory))
                 yield return dotnetSdk;
 #endif
         }
