@@ -119,7 +119,7 @@ namespace Microsoft.Build.Locator
 
             var lineSdkIndex = lines.FindIndex(line => line.Contains(".NET Core SDKs installed"));
 
-            if (lineSdkIndex > 0)
+            if (lineSdkIndex != -1)
             {
                 lineSdkIndex++; 
 
