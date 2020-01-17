@@ -33,7 +33,6 @@ namespace Microsoft.Build.Locator
         private static readonly string s_monoMSBuildDll_Current_RelativePath = Path.Combine ("lib", "mono", "msbuild", "Current", "bin", "MSBuild.dll");
         private static readonly string s_monoMSBuildDll_15_0_RelativePath    = Path.Combine ("lib", "mono", "msbuild", "15.0", "bin", "MSBuild.dll");
         private static readonly string s_monoOSXBasePath = "/Library/Frameworks/Mono.framework/Versions";
-        private static Lazy<Regex> s_monoVersionRegex = new Lazy<Regex>(() => new Regex("^Mono.*compiler version ([0-9\\.]*)"));
 
 #if NET46
         private static ResolveEventHandler s_registeredHandler;
@@ -313,7 +312,7 @@ namespace Microsoft.Build.Locator
 
         private static IEnumerable<VisualStudioInstance> GetInstances(VisualStudioInstanceQueryOptions options)
         {
-            if (IsRunningOnMono)
+            if (options.DiscoveryTypes.HasFlag(DiscoveryType.Mono) && IsRunningOnMono)
             {
                 foreach(var instance in GetMonoMSBuildInstances())
                     yield return instance;
@@ -377,7 +376,7 @@ namespace Microsoft.Build.Locator
                     return false;
                 }
 
-                if (Version.TryParse(Path.GetFileName(path), out ver) || TryGetMonoVersionFromMonoBinary(path, out ver))
+                if (TryGetMonoVersionFromMonoBinary(path, out ver) || Version.TryParse(Path.GetFileName(path), out ver))
                 {
                     return true;
                 }
@@ -395,22 +394,20 @@ namespace Microsoft.Build.Locator
                 {
                     var p = new Process ();
                     p.StartInfo.FileName = Path.Combine (monoPrefixPath, "bin", "mono");
-                    p.StartInfo.Arguments = "--version";
+                    p.StartInfo.Arguments = "--version=number";
                     p.StartInfo.UseShellExecute = false;
                     p.StartInfo.RedirectStandardOutput = true;
+                    p.StartInfo.RedirectStandardError = true;
 
                     // Don't pollute caller's console
                     p.OutputDataReceived += (s, e) => {};
+                    p.ErrorDataReceived += (s, e) => {};
 
                     p.Start ();
                     p.WaitForExit ();
 
                     var stdout_str = p.StandardOutput.ReadToEnd ();
-                    var match = s_monoVersionRegex.Value.Match(stdout_str);
-                    if (match.Success)
-                    {
-                        return Version.TryParse(match.Groups[1].ToString(), out ver);
-                    }
+                    return Version.TryParse(stdout_str, out ver);
                 } catch (Win32Exception) {
                 }
 
@@ -464,14 +461,13 @@ namespace Microsoft.Build.Locator
         {
             get
             {
-                if (_isRunningOnMono != null) return _isRunningOnMono.Value;
+                if (_isRunningOnMono.HasValue) return _isRunningOnMono.Value;
 
                 lock (IsRunningOnMonoLock)
                 {
                     if (_isRunningOnMono == null)
                     {
                         // There could be potentially expensive TypeResolve events, so cache IsMono.
-                        // Also, VS does not host Mono runtimes, so turn IsMono off when msbuild is running under VS
                         _isRunningOnMono = Type.GetType("Mono.Runtime") != null;
                     }
                 }
