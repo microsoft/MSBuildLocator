@@ -3,10 +3,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 #if NETCOREAPP
@@ -26,6 +29,11 @@ namespace Microsoft.Build.Locator
             "Microsoft.Build.Tasks.Core",
             "Microsoft.Build.Utilities.Core"
         };
+
+        private static readonly string s_monoMSBuildDll_Current_RelativePath = Path.Combine ("lib", "mono", "msbuild", "Current", "bin", "MSBuild.dll");
+        private static readonly string s_monoMSBuildDll_15_0_RelativePath    = Path.Combine ("lib", "mono", "msbuild", "15.0", "bin", "MSBuild.dll");
+        private static readonly string s_monoOSXBasePath = "/Library/Frameworks/Mono.framework/Versions";
+        private static Lazy<Regex> s_monoVersionRegex = new Lazy<Regex>(() => new Regex("^Mono.*compiler version ([0-9\\.]*)"));
 
 #if NET46
         private static ResolveEventHandler s_registeredHandler;
@@ -305,6 +313,14 @@ namespace Microsoft.Build.Locator
 
         private static IEnumerable<VisualStudioInstance> GetInstances(VisualStudioInstanceQueryOptions options)
         {
+            if (IsRunningOnMono)
+            {
+                foreach(var instance in GetMonoMSBuildInstances())
+                    yield return instance;
+
+                yield break;
+            }
+
 #if NET46
             var devConsole = GetDevConsoleInstance();
             if (devConsole != null)
@@ -322,6 +338,87 @@ namespace Microsoft.Build.Locator
                 yield return dotnetSdk;
 #endif
         }
+
+        static IEnumerable<VisualStudioInstance> GetMonoMSBuildInstances ()
+        {
+            // $prefix/lib/mono/4.5/mscorlib.dll
+            var runningMonoPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof (object).Assembly.Location), "..", "..", ".."));
+            if (TryGetValidMonoVersion (runningMonoPath, out var version))
+            {
+                yield return new VisualStudioInstance("Mono", runningMonoPath, version, DiscoveryType.Mono);
+            }
+
+            if (!IsOSX)
+            {
+                // Returning just one instance on !osx
+                yield break;
+            }
+
+            foreach(var dirPath in Directory.EnumerateDirectories(s_monoOSXBasePath))
+            {
+                if (string.Compare(Path.GetFileName (dirPath), "Current") == 0 || // skip the `Current` symlink
+                    string.Compare(dirPath, runningMonoPath) == 0)               // and the running mono version
+                {
+                    continue;
+                }
+
+                if (TryGetValidMonoVersion(dirPath, out version))
+                {
+                    yield return new VisualStudioInstance("Mono", dirPath, version, DiscoveryType.Mono);
+                }
+            }
+
+            bool TryGetValidMonoVersion (string path, out Version ver)
+            {
+                ver = null;
+                if (!File.Exists(Path.Combine(path, s_monoMSBuildDll_Current_RelativePath)) &&
+                        !File.Exists(Path.Combine(path, s_monoMSBuildDll_15_0_RelativePath)))
+                {
+                    return false;
+                }
+
+                if (Version.TryParse(Path.GetFileName(path), out ver) || TryGetMonoVersionFromMonoBinary(path, out ver))
+                {
+                    return true;
+                }
+
+                // The path has a valid mono, but we can't find the version
+                // so, let's return the instance at least but with version 0.0.0
+                ver = new Version (0, 0, 0);
+                return true;
+            }
+
+            bool TryGetMonoVersionFromMonoBinary(string monoPrefixPath, out Version ver)
+            {
+                ver = null;
+                try
+                {
+                    var p = new Process ();
+                    p.StartInfo.FileName = Path.Combine (monoPrefixPath, "bin", "mono");
+                    p.StartInfo.Arguments = "--version";
+                    p.StartInfo.UseShellExecute = false;
+                    p.StartInfo.RedirectStandardOutput = true;
+
+                    // Don't pollute caller's console
+                    p.OutputDataReceived += (s, e) => {};
+
+                    p.Start ();
+                    p.WaitForExit ();
+
+                    var stdout_str = p.StandardOutput.ReadToEnd ();
+                    var match = s_monoVersionRegex.Value.Match(stdout_str);
+                    if (match.Success)
+                    {
+                        return Version.TryParse(match.Groups[1].ToString(), out ver);
+                    }
+                } catch (Win32Exception) {
+                }
+
+                return false;
+            }
+        }
+
+
 
 #if NET46
         private static VisualStudioInstance GetDevConsoleInstance()
@@ -354,5 +451,53 @@ namespace Microsoft.Build.Locator
             return null;
         }
 #endif
+
+        // Taken from MSBuild/NativeMethodsShared
+        private static readonly object IsRunningOnMonoLock = new object();
+
+        private static bool? _isRunningOnMono;
+
+        /// <summary>
+        /// Gets a flag indicating if we are running under MONO
+        /// </summary>
+        internal static bool IsRunningOnMono
+        {
+            get
+            {
+                if (_isRunningOnMono != null) return _isRunningOnMono.Value;
+
+                lock (IsRunningOnMonoLock)
+                {
+                    if (_isRunningOnMono == null)
+                    {
+                        // There could be potentially expensive TypeResolve events, so cache IsMono.
+                        // Also, VS does not host Mono runtimes, so turn IsMono off when msbuild is running under VS
+                        _isRunningOnMono = Type.GetType("Mono.Runtime") != null;
+                    }
+                }
+
+                return _isRunningOnMono.Value;
+            }
+        }
+
+        // Taken from MSBuild/NativeMethodsShared
+        private static bool? _isOSX;
+
+        /// <summary>
+        /// Gets a flag indicating if we are running under Mac OSX
+        /// </summary>
+        internal static bool IsOSX
+        {
+            get
+            {
+                if (!_isOSX.HasValue)
+                {
+                    _isOSX = File.Exists("/usr/lib/libc.dylib");
+                }
+
+                return _isOSX.Value;
+            }
+        }
+
     }
 }

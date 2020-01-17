@@ -19,11 +19,13 @@ namespace Microsoft.Build.Locator.Tests
                 new VisualStudioInstance("A7D13212839F4997AF65F7F74618EBAB", "none", new Version(1, 0), DiscoveryType.DeveloperConsole),
                 new VisualStudioInstance("DBF404629ED2408182263033F0358A1E", "none", new Version(1, 0), DiscoveryType.VisualStudioSetup),
                 new VisualStudioInstance("98B38291074547D89A86758A26621EF3", "none", new Version(1, 0), DiscoveryType.DotNetSdk),
+                new VisualStudioInstance("98B38291074547D89A86758A26621ABC", "none", new Version(1, 0), DiscoveryType.Mono)
             };
 
             VerifyQueryResults(instances, DiscoveryType.DeveloperConsole, "A7D13212839F4997AF65F7F74618EBAB");
             VerifyQueryResults(instances, DiscoveryType.VisualStudioSetup, "DBF404629ED2408182263033F0358A1E");
             VerifyQueryResults(instances, DiscoveryType.DotNetSdk, "98B38291074547D89A86758A26621EF3");
+            VerifyQueryResults(instances, DiscoveryType.Mono, "98B38291074547D89A86758A26621ABC");
             VerifyQueryResults(instances, DiscoveryType.DeveloperConsole | DiscoveryType.DotNetSdk, "A7D13212839F4997AF65F7F74618EBAB", "98B38291074547D89A86758A26621EF3");
             VerifyQueryResults(instances, DiscoveryType.DeveloperConsole | DiscoveryType.VisualStudioSetup | DiscoveryType.DotNetSdk, "A7D13212839F4997AF65F7F74618EBAB", "DBF404629ED2408182263033F0358A1E", "98B38291074547D89A86758A26621EF3");
             VerifyQueryResults(instances, DiscoveryType.VisualStudioSetup | DiscoveryType.DotNetSdk, "DBF404629ED2408182263033F0358A1E", "98B38291074547D89A86758A26621EF3");
@@ -38,6 +40,7 @@ namespace Microsoft.Build.Locator.Tests
                 new VisualStudioInstance("EFE7BA53882F4214BBD8447EC0683FC8", "none", new Version(1, 0), DiscoveryType.VisualStudioSetup),
                 new VisualStudioInstance("5F932E55D1B84DCB82EE97B47EB531EB", "none", new Version(1, 0), DiscoveryType.VisualStudioSetup),
                 new VisualStudioInstance("78C4AEBB58AE44ACA0FA1E78B8306E2A", "none", new Version(1, 0), DiscoveryType.VisualStudioSetup),
+                new VisualStudioInstance("98B38291074547D89A86758A26621ABC", "none", new Version(1, 0), DiscoveryType.Mono)
             };
 
             VerifyQueryResults(instances, DiscoveryType.VisualStudioSetup, "EFE7BA53882F4214BBD8447EC0683FC8", "5F932E55D1B84DCB82EE97B47EB531EB", "78C4AEBB58AE44ACA0FA1E78B8306E2A");

@@ -30,6 +30,14 @@ namespace Microsoft.Build.Locator
                 case DiscoveryType.DotNetSdk:
                     MSBuildPath = VisualStudioRootPath;
                     break;
+                case DiscoveryType.Mono:
+                {
+                    var pathCurrent = Path.Combine(VisualStudioRootPath, "lib", "mono", "msbuild", "Current", "bin");
+                    var path15_0 = Path.Combine(VisualStudioRootPath, "lib", "mono", "msbuild", "15.0", "bin");
+
+                    MSBuildPath = File.Exists(pathCurrent) ? pathCurrent : path15_0;
+                    break;
+                }
                 default:
                     throw new ArgumentOutOfRangeException(nameof(discoveryType), discoveryType, null);
             }

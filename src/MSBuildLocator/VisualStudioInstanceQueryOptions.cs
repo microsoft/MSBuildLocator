@@ -17,7 +17,7 @@ namespace Microsoft.Build.Locator
         {
             DiscoveryTypes =
 #if FEATURE_VISUALSTUDIOSETUP
-                DiscoveryType.DeveloperConsole | DiscoveryType.VisualStudioSetup
+                DiscoveryType.DeveloperConsole | DiscoveryType.VisualStudioSetup | DiscoveryType.Mono
 #endif
 #if NETCOREAPP
                 DiscoveryType.DotNetSdk
