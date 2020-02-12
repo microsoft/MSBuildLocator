@@ -11,12 +11,13 @@ namespace Microsoft.Build.Locator
     /// </summary>
     public class VisualStudioInstance
     {
-        internal VisualStudioInstance(string name, string path, Version version, DiscoveryType discoveryType)
+        internal VisualStudioInstance(string name, string path, Version version, DiscoveryType discoveryType, string msbuildPath = null)
         {
             Name = name;
             VisualStudioRootPath = path;
             Version = version;
             DiscoveryType = discoveryType;
+            MSBuildPath = msbuildPath;
 
             switch (discoveryType)
             {
@@ -29,6 +30,8 @@ namespace Microsoft.Build.Locator
                     break;
                 case DiscoveryType.DotNetSdk:
                     MSBuildPath = VisualStudioRootPath;
+                    break;
+                case DiscoveryType.CoreXT:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(discoveryType), discoveryType, null);

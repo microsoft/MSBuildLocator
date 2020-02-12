@@ -306,6 +306,12 @@ namespace Microsoft.Build.Locator
         private static IEnumerable<VisualStudioInstance> GetInstances(VisualStudioInstanceQueryOptions options)
         {
 #if NET46
+    #if FEATURE_VISUALSTUDIOSETUP
+            var corext = GetCoreXTInstance();
+            if (corext != null)
+                yield return corext;
+    #endif
+
             var devConsole = GetDevConsoleInstance();
             if (devConsole != null)
                 yield return devConsole;
@@ -324,6 +330,46 @@ namespace Microsoft.Build.Locator
         }
 
 #if NET46
+        /// <summary>
+        /// Gets CoreXT instances.
+        /// </summary>
+        /// <param name="visualStudioInstances">Optional <see cref="IList{VisualStudioInstance} "/> containing instances.  If none are specified, they are discovered through the Visual Studio Setup API.
+        /// This is only here for unit tests</param>
+        /// <param name="directoryExists">An optional <see cref="Func{String,Boolean} "/> to use when checking directory existence.  Should only be set by unit tests.</param>
+        /// <returns>A <see cref="VisualStudioInstance" /> object representing the Visual Studio instance if one is found, otherwise null.</returns>
+        internal static VisualStudioInstance GetCoreXTInstance(IList<VisualStudioInstance> visualStudioInstances = null, Func<string, bool> directoryExists = null)
+        {
+            var toolset = Environment.GetEnvironmentVariable("MsBuildToolset")?.Trim();
+
+            if (string.IsNullOrWhiteSpace(toolset) || !int.TryParse(toolset, out int toolsetVersion) || toolsetVersion < 150)
+            {
+                // MsBuildToolset is not set or is less than 150
+                return null;
+            }
+
+            var msbuildPath = Environment.GetEnvironmentVariable($"MSBuildToolsPath_{toolset}");
+
+
+            if (string.IsNullOrWhiteSpace(msbuildPath) || !(directoryExists ?? Directory.Exists)(msbuildPath))
+            {
+                // A corresponding MSBuildToolsPath_XXX env var must be set and it must exist
+                return null;
+            }
+
+            if (!Version.TryParse(Environment.GetEnvironmentVariable("VisualStudioVersion"), out Version visualStudioVersion))
+            {
+                // VisualStudioVersion env var must be set to a valid version
+                return null;
+            }
+
+
+            // Find the newest installed Visual Studio instance that corresponds with the VisualStudioVersion set by CoreXT
+            VisualStudioInstance visualStudioInstance = (visualStudioInstances ?? VisualStudioLocationHelper.GetInstances()).Where(i => i.Version.Major == visualStudioVersion.Major).OrderByDescending(i => i.Version).FirstOrDefault();
+
+            // Return a composite with the Visual Studio path and the path of the CoreXT MSBuild
+            return new VisualStudioInstance("COREXT", visualStudioInstance?.VisualStudioRootPath, visualStudioInstance?.Version ?? visualStudioVersion, DiscoveryType.CoreXT, msbuildPath);
+        }
+
         private static VisualStudioInstance GetDevConsoleInstance()
         {
             var path = Environment.GetEnvironmentVariable("VSINSTALLDIR");

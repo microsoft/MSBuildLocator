@@ -25,6 +25,11 @@ namespace Microsoft.Build.Locator
         /// <summary>
         ///     Discovery via dotnet --info.
         /// </summary>
-        DotNetSdk = 4
+        DotNetSdk = 4,
+
+        /// <summary>
+        /// Discovery via the Microsoft internal-only build environment CoreXT.
+        /// </summary>
+        CoreXT = 8
     }
 }

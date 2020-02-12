@@ -19,6 +19,7 @@ namespace Microsoft.Build.Locator.Tests
                 new VisualStudioInstance("A7D13212839F4997AF65F7F74618EBAB", "none", new Version(1, 0), DiscoveryType.DeveloperConsole),
                 new VisualStudioInstance("DBF404629ED2408182263033F0358A1E", "none", new Version(1, 0), DiscoveryType.VisualStudioSetup),
                 new VisualStudioInstance("98B38291074547D89A86758A26621EF3", "none", new Version(1, 0), DiscoveryType.DotNetSdk),
+                new VisualStudioInstance("055AC20F60594F85BFC7CC63A5CFDA81", "none", new Version(1, 0), DiscoveryType.CoreXT),
             };
 
             VerifyQueryResults(instances, DiscoveryType.DeveloperConsole, "A7D13212839F4997AF65F7F74618EBAB");
@@ -27,6 +28,8 @@ namespace Microsoft.Build.Locator.Tests
             VerifyQueryResults(instances, DiscoveryType.DeveloperConsole | DiscoveryType.DotNetSdk, "A7D13212839F4997AF65F7F74618EBAB", "98B38291074547D89A86758A26621EF3");
             VerifyQueryResults(instances, DiscoveryType.DeveloperConsole | DiscoveryType.VisualStudioSetup | DiscoveryType.DotNetSdk, "A7D13212839F4997AF65F7F74618EBAB", "DBF404629ED2408182263033F0358A1E", "98B38291074547D89A86758A26621EF3");
             VerifyQueryResults(instances, DiscoveryType.VisualStudioSetup | DiscoveryType.DotNetSdk, "DBF404629ED2408182263033F0358A1E", "98B38291074547D89A86758A26621EF3");
+            VerifyQueryResults(instances, DiscoveryType.CoreXT, "055AC20F60594F85BFC7CC63A5CFDA81");
+            VerifyQueryResults(instances, DiscoveryType.CoreXT | DiscoveryType.DotNetSdk, "055AC20F60594F85BFC7CC63A5CFDA81", "98B38291074547D89A86758A26621EF3");
         }
 
         [Fact]
