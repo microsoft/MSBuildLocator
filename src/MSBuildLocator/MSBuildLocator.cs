@@ -349,7 +349,6 @@ namespace Microsoft.Build.Locator
 
             var msbuildPath = Environment.GetEnvironmentVariable($"MSBuildToolsPath_{toolset}");
 
-
             if (string.IsNullOrWhiteSpace(msbuildPath) || !(directoryExists ?? Directory.Exists)(msbuildPath))
             {
                 // A corresponding MSBuildToolsPath_XXX env var must be set and it must exist
@@ -361,7 +360,6 @@ namespace Microsoft.Build.Locator
                 // VisualStudioVersion env var must be set to a valid version
                 return null;
             }
-
 
             // Find the newest installed Visual Studio instance that corresponds with the VisualStudioVersion set by CoreXT
             VisualStudioInstance visualStudioInstance = (visualStudioInstances ?? VisualStudioLocationHelper.GetInstances()).Where(i => i.Version.Major == visualStudioVersion.Major).OrderByDescending(i => i.Version).FirstOrDefault();
