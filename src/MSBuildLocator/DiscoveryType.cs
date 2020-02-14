@@ -30,6 +30,6 @@ namespace Microsoft.Build.Locator
         /// <summary>
         /// Discovery via the Microsoft internal-only build environment CoreXT.
         /// </summary>
-        CoreXT = 8
+        CoreXT = 8,
     }
 }
