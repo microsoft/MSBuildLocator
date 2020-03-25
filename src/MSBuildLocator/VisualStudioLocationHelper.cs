@@ -66,11 +66,14 @@ namespace Microsoft.Build.Locator
 
                         if (instanceHasMSBuild)
                         {
+                            var product = instance.GetProduct();
+
                             validInstances.Add(new VisualStudioInstance(
                                 instance.GetDisplayName(),
                                 instance.GetInstallationPath(),
                                 version,
-                                DiscoveryType.VisualStudioSetup));
+                                DiscoveryType.VisualStudioSetup,
+                                product.GetId()));
                         }
                     }
                 } while (fetched > 0);

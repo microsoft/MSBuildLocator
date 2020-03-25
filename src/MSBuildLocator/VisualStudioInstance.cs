@@ -11,12 +11,13 @@ namespace Microsoft.Build.Locator
     /// </summary>
     public class VisualStudioInstance
     {
-        internal VisualStudioInstance(string name, string path, Version version, DiscoveryType discoveryType)
+        internal VisualStudioInstance(string name, string path, Version version, DiscoveryType discoveryType, string productId)
         {
             Name = name;
             VisualStudioRootPath = path;
             Version = version;
             DiscoveryType = discoveryType;
+            ProductId = productId;
 
             switch (discoveryType)
             {
@@ -34,6 +35,11 @@ namespace Microsoft.Build.Locator
                     throw new ArgumentOutOfRangeException(nameof(discoveryType), discoveryType, null);
             }
         }
+
+        /// <summary>
+        ///     The ID of the product.
+        /// </summary>
+        public string ProductId { get; }
 
         /// <summary>
         ///     Version of the Visual Studio Instance

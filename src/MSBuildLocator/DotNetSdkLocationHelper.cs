@@ -55,7 +55,8 @@ namespace Microsoft.Build.Locator
                 name: ".NET Core SDK",
                 path: dotNetSdkPath,
                 version: new Version(major, minor, patch),
-                discoveryType: DiscoveryType.DotNetSdk);
+                discoveryType: DiscoveryType.DotNetSdk,
+                productId: null);
         }
 
         private static string GetDotNetBasePath(string workingDirectory)
