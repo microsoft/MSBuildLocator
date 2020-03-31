@@ -361,11 +361,8 @@ namespace Microsoft.Build.Locator
                 return null;
             }
 
-            // Find the newest installed Visual Studio instance that corresponds with the VisualStudioVersion set by CoreXT
-            VisualStudioInstance visualStudioInstance = (visualStudioInstances ?? VisualStudioLocationHelper.GetInstances()).Where(i => i.Version.Major == visualStudioVersion.Major).OrderByDescending(i => i.Version).FirstOrDefault();
-
             // Return a composite with the Visual Studio path and the path of the CoreXT MSBuild
-            return new VisualStudioInstance("COREXT", visualStudioInstance?.VisualStudioRootPath, visualStudioInstance?.Version ?? visualStudioVersion, DiscoveryType.CoreXT, msbuildPath);
+            return new VisualStudioInstance("COREXT", msbuildPath, visualStudioVersion, DiscoveryType.CoreXT);
         }
 
         private static VisualStudioInstance GetDevConsoleInstance()

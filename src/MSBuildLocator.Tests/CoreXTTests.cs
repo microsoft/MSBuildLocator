@@ -18,14 +18,13 @@ namespace Microsoft.Build.Locator.Tests
         public void DiscoverCoreXT()
         {
             const string expectedMSBuildPath = @"C:\Cx\.A\MsBuild.Corext";
-            const string expectedVisualStudioPath = @"C:\16.0";
-            var expectedVisualStudioVersion = new Version(16, 1, 1);
+            var expectedVisualStudioVersion = new Version(16, 0);
 
             var visualStudioInstances = new List<VisualStudioInstance>
             {
                 new VisualStudioInstance("14.0", @"C:\14.0", new Version(14, 0), DiscoveryType.VisualStudioSetup),
                 new VisualStudioInstance("15.9", @"C:\15.9", new Version(15, 9), DiscoveryType.VisualStudioSetup),
-                new VisualStudioInstance("16.0", expectedVisualStudioPath, expectedVisualStudioVersion, DiscoveryType.VisualStudioSetup),
+                new VisualStudioInstance("16.0", expectedMSBuildPath, expectedVisualStudioVersion, DiscoveryType.VisualStudioSetup),
             };
 
             using (new TemporaryEnvironmentVariables(new Dictionary<string, string>
@@ -39,81 +38,9 @@ namespace Microsoft.Build.Locator.Tests
 
                 instance.ShouldNotBeNull();
 
-                instance.VisualStudioRootPath.ShouldBe(expectedVisualStudioPath);
+                instance.VisualStudioRootPath.ShouldBe(expectedMSBuildPath);
                 instance.MSBuildPath.ShouldBe(expectedMSBuildPath);
                 instance.Version.ShouldBe(expectedVisualStudioVersion);
-                instance.DiscoveryType.ShouldBe(DiscoveryType.CoreXT);
-                instance.Name.ShouldBe("COREXT");
-            }
-        }
-
-        /// <summary>
-        /// When more than one version of Visual Studio is installed, the newest one that matches the major version is returned.
-        /// </summary>
-        [Fact]
-        public void LatestVisualStudioReturned()
-        {
-            const string expectedMSBuildPath = @"C:\Cx\.A\MsBuild.Corext";
-            const string expectedVisualStudioPath = @"C:\16.2";
-            var expectedVisualStudioVersion = new Version(16, 2);
-
-            var visualStudioInstances = new List<VisualStudioInstance>
-            {
-                new VisualStudioInstance("14.0", @"C:\14.0", new Version(14, 0), DiscoveryType.VisualStudioSetup),
-                new VisualStudioInstance("15.9", @"C:\15.9", new Version(15, 9), DiscoveryType.VisualStudioSetup),
-                new VisualStudioInstance("16.0", @"C:\16.0", new Version(16, 0), DiscoveryType.VisualStudioSetup),
-                new VisualStudioInstance("16.1", @"C:\16.1", new Version(16, 1), DiscoveryType.VisualStudioSetup),
-                new VisualStudioInstance("16.2", expectedVisualStudioPath, expectedVisualStudioVersion, DiscoveryType.VisualStudioSetup),
-            };
-
-            using (new TemporaryEnvironmentVariables(new Dictionary<string, string>
-            {
-                ["MsBuildToolset"] = "160",
-                ["MSBuildToolsPath_160"] = expectedMSBuildPath,
-                ["VisualStudioVersion"] = "16.0"
-            }))
-            {
-                var instance = MSBuildLocator.GetCoreXTInstance(visualStudioInstances, directoryExists: (path) => true);
-
-                instance.ShouldNotBeNull();
-
-                instance.VisualStudioRootPath.ShouldBe(expectedVisualStudioPath);
-                instance.MSBuildPath.ShouldBe(expectedMSBuildPath);
-                instance.Version.ShouldBe(expectedVisualStudioVersion);
-                instance.DiscoveryType.ShouldBe(DiscoveryType.CoreXT);
-                instance.Name.ShouldBe("COREXT");
-            }
-        }
-
-        /// <summary>
-        /// When there's no matching Visual Studio installation for the configured build environment, the MSBuild path is still set.
-        /// </summary>
-        [Fact]
-        public void NoVisualStudioInstance()
-        {
-            const string expectedMSBuildPath = @"C:\Cx\.A\MsBuild.Corext";
-            const string expectedVisualStudioVersion = "16.0";
-
-            var visualStudioInstances = new List<VisualStudioInstance>
-            {
-                // Only Visual Studio 2017 installed
-                new VisualStudioInstance("15.9", @"C:\15.9", new Version(15, 9), DiscoveryType.VisualStudioSetup),
-            };
-
-            using (new TemporaryEnvironmentVariables(new Dictionary<string, string>
-            {
-                ["MsBuildToolset"] = "160",
-                ["MSBuildToolsPath_160"] = expectedMSBuildPath,
-                ["VisualStudioVersion"] = "16.0"
-            }))
-            {
-                var instance = MSBuildLocator.GetCoreXTInstance(visualStudioInstances, directoryExists: (path) => true);
-
-                instance.ShouldNotBeNull();
-
-                instance.VisualStudioRootPath.ShouldBeNull();
-                instance.MSBuildPath.ShouldBe(expectedMSBuildPath);
-                instance.Version.ShouldBe(Version.Parse(expectedVisualStudioVersion));
                 instance.DiscoveryType.ShouldBe(DiscoveryType.CoreXT);
                 instance.Name.ShouldBe("COREXT");
             }
@@ -142,7 +69,7 @@ namespace Microsoft.Build.Locator.Tests
 
                 instance.ShouldNotBeNull();
 
-                instance.VisualStudioRootPath.ShouldBeNull();
+                instance.VisualStudioRootPath.ShouldBe(expectedMSBuildToolsPath);
                 instance.MSBuildPath.ShouldBe(expectedMSBuildToolsPath);
                 instance.Version.ShouldBe(Version.Parse(visualStudioVersion));
                 instance.DiscoveryType.ShouldBe(DiscoveryType.CoreXT);
@@ -180,5 +107,6 @@ namespace Microsoft.Build.Locator.Tests
             }
         }
     }
+
 #endif
 }
