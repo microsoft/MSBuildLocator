@@ -22,9 +22,12 @@ namespace Microsoft.Build.Locator
         private static readonly string[] s_msBuildAssemblies =
         {
             "Microsoft.Build",
+            "Microsoft.Build.Engine",
             "Microsoft.Build.Framework",
             "Microsoft.Build.Tasks.Core",
-            "Microsoft.Build.Utilities.Core"
+            "Microsoft.Build.Utilities.Core",
+            "System.Runtime.CompilerServices.Unsafe",
+            "System.Numerics.Vectors"
         };
 
 #if NET46
