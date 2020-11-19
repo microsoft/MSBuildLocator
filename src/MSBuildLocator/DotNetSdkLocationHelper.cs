@@ -117,25 +117,29 @@ namespace Microsoft.Build.Locator
 
             var outputString = string.Join(Environment.NewLine, lines);
 
-            var lineSdkIndex = lines.FindIndex(line => line.Contains(".NET Core SDKs installed"));
+            var matched = DotNetBasePathRegex.Match(outputString);
+            if (!matched.Success)
+            {
+                return null;
+            }
+
+            var lineSdkIndex = lines.FindIndex(line => line.Contains(".NET Core SDKs installed") || line.Contains(".NET SDKs installed"));
 
             if (lineSdkIndex != -1)
             {
                 lineSdkIndex++; 
 
-                while (lineSdkIndex < lines.Count && !lines[lineSdkIndex].Contains(".NET Core runtimes installed"))
+                while (lineSdkIndex < lines.Count && (!lines[lineSdkIndex].Contains(".NET Core runtimes installed") && !lines[lineSdkIndex].Contains(".NET runtimes installed")))
                 {
-                    var ma = SdkRegex.Match(lines[lineSdkIndex]);
+                    var sdkMatch = SdkRegex.Match(lines[lineSdkIndex]);
 
-                    if (!ma.Success)
+                    if (!sdkMatch.Success)
                         break;
 
-                    var version = ma.Groups[1].Value.Trim();                     
-                    var path = ma.Groups[2].Value.Trim();
+                    var version = sdkMatch.Groups[1].Value.Trim();                     
+                    var path = sdkMatch.Groups[2].Value.Trim();
 
-                    path = Path.Combine(path, version) + "\\";
-
-                    //basePaths.Add(path);
+                    path = Path.Combine(path, version) + "\\";                    
 
                     // We insert at index 0 so that instance list will be sorted descending so that instances.FirstOrDefault() 
                     // will always return the latest installed version of dotnet SDK 
@@ -143,17 +147,8 @@ namespace Microsoft.Build.Locator
 
                     lineSdkIndex++;
                 }
-            }
-
-            var matched = DotNetBasePathRegex.Match(outputString);
-            if (!matched.Success)
-            {
-                return null;
-            }
-
-            //basePaths.Add(matched.Groups[1].Value.Trim());
-            basePaths.Insert(0, matched.Groups[1].Value.Trim());    // Insert at index 0 to not break FirstOrDefault() returning the latest SDK
-
+            }            
+            
             return basePaths;
         }
     }

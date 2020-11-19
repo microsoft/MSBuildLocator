@@ -22,9 +22,12 @@ namespace Microsoft.Build.Locator
         private static readonly string[] s_msBuildAssemblies =
         {
             "Microsoft.Build",
+            "Microsoft.Build.Engine",
             "Microsoft.Build.Framework",
             "Microsoft.Build.Tasks.Core",
-            "Microsoft.Build.Utilities.Core"
+            "Microsoft.Build.Utilities.Core",
+            "System.Runtime.CompilerServices.Unsafe",
+            "System.Numerics.Vectors"            
         };
 
 #if NET46
@@ -81,7 +84,7 @@ namespace Microsoft.Build.Locator
             IEnumerable<VisualStudioInstance> instances,
             VisualStudioInstanceQueryOptions options)
         {
-            return instances.Where(i => options.DiscoveryTypes.HasFlag(i.DiscoveryType));
+            return instances.Where(i => i != null && options.DiscoveryTypes.HasFlag(i.DiscoveryType));
         }
 
         /// <summary>
@@ -310,10 +313,10 @@ namespace Microsoft.Build.Locator
             if (devConsole != null)
                 yield return devConsole;
 
-#if FEATURE_VISUALSTUDIOSETUP
+    #if FEATURE_VISUALSTUDIOSETUP
             foreach (var instance in VisualStudioLocationHelper.GetInstances())
                 yield return instance;
-#endif
+    #endif
 #endif
 
 #if NETCOREAPP

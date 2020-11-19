@@ -16,7 +16,7 @@ namespace BuilderApp
     internal class Program
     {
         private static void Main(string[] args)
-        {
+        {            
             Header();
             var projectFilePath = Args(args);
 
