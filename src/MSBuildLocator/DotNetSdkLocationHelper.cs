@@ -14,7 +14,6 @@ namespace Microsoft.Build.Locator
     internal static class DotNetSdkLocationHelper
     {
         private static readonly Regex DotNetBasePathRegex = new Regex("Base Path:(.*)$", RegexOptions.Multiline);
-        private static readonly Regex VersionRegex = new Regex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline);
 
         public static VisualStudioInstance GetInstance(string workingDirectory)
         {
@@ -36,17 +35,7 @@ namespace Microsoft.Build.Locator
                 return null;
             }
 
-            string versionContent = File.ReadAllText(versionPath);
-            Match versionMatch = VersionRegex.Match(versionContent);
-
-            if (!versionMatch.Success)
-            {
-                return null;
-            }
-
-            if (!int.TryParse(versionMatch.Groups[1].Value, out int major) ||
-                !int.TryParse(versionMatch.Groups[2].Value, out int minor) ||
-                !int.TryParse(versionMatch.Groups[3].Value, out int patch))
+            if (!Version.TryParse(File.ReadAllText(versionPath), out Version version) || version > Environment.Version)
             {
                 return null;
             }
@@ -54,7 +43,7 @@ namespace Microsoft.Build.Locator
             return new VisualStudioInstance(
                 name: ".NET Core SDK",
                 path: dotNetSdkPath,
-                version: new Version(major, minor, patch),
+                version: version,
                 discoveryType: DiscoveryType.DotNetSdk);
         }
 
