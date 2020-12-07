@@ -15,12 +15,12 @@ namespace Microsoft.Build.Locator
         /// </summary>
         public static VisualStudioInstanceQueryOptions Default => new VisualStudioInstanceQueryOptions
         {
-            DiscoveryTypes =
+            DiscoveryTypes = 0
 #if FEATURE_VISUALSTUDIOSETUP
-                DiscoveryType.DeveloperConsole | DiscoveryType.VisualStudioSetup
+                | DiscoveryType.DeveloperConsole | DiscoveryType.VisualStudioSetup
 #endif
 #if NETCOREAPP
-                DiscoveryType.DotNetSdk
+                | DiscoveryType.DotNetSdk
 #endif
         };
 
