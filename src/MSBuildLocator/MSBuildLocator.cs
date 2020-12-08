@@ -44,14 +44,6 @@ namespace Microsoft.Build.Locator
         /// </summary>
         public static bool IsRegistered => s_registeredHandler != null;
 
-        /// <summary>
-        ///     Gets a value indicating whether an instance of MSBuild can be registered.
-        /// </summary>
-        /// <remarks>
-        ///     If any Microsoft.Build assemblies are already loaded into the current AppDomain, the value will be false.
-        /// </remarks>
-        public static bool CanRegister => !IsRegistered && !LoadedMsBuildAssemblies.Any();
-
         private static IEnumerable<Assembly> LoadedMsBuildAssemblies => AppDomain.CurrentDomain.GetAssemblies().Where(IsMSBuildAssembly);
 
         /// <summary>
@@ -154,7 +146,7 @@ namespace Microsoft.Build.Locator
                 throw new ArgumentException($"Directory \"{msbuildPath}\" does not exist", nameof(msbuildPath));
             }
 
-            if (!CanRegister)
+            if (IsRegistered)
             {
                 var loadedAssemblyList = string.Join(Environment.NewLine, LoadedMsBuildAssemblies.Select(a => a.GetName()));
 
@@ -174,6 +166,10 @@ namespace Microsoft.Build.Locator
 
             // AssemblyResolve event can fire multiple times for the same assembly, so keep track of what's already been loaded.
             var loadedAssemblies = new Dictionary<string, Assembly>(s_msBuildAssemblies.Length);
+            foreach (Assembly assembly in LoadedMsBuildAssemblies)
+            {
+                loadedAssemblies.Add(assembly.GetName().Name, assembly);
+            }
 
             // Saving the handler in a static field so it can be unregistered later.
 #if NET46
