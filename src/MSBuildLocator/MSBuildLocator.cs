@@ -84,7 +84,7 @@ namespace Microsoft.Build.Locator
             IEnumerable<VisualStudioInstance> instances,
             VisualStudioInstanceQueryOptions options)
         {
-            return instances.Where(i => i != null && options.DiscoveryTypes.HasFlag(i.DiscoveryType));
+            return instances.Where(i => options.DiscoveryTypes.HasFlag(i.DiscoveryType));
         }
 
         /// <summary>
