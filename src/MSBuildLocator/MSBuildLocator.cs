@@ -27,7 +27,7 @@ namespace Microsoft.Build.Locator
             "Microsoft.Build.Tasks.Core",
             "Microsoft.Build.Utilities.Core",
             "System.Runtime.CompilerServices.Unsafe",
-            "System.Numerics.Vectors"            
+            "System.Numerics.Vectors"
         };
 
 #if NET46
@@ -161,6 +161,10 @@ namespace Microsoft.Build.Locator
                 var error = $"{typeof(MSBuildLocator)}.{nameof(RegisterInstance)} was called, but MSBuild assemblies were already loaded." +
                     Environment.NewLine +
                     $"Ensure that {nameof(RegisterInstance)} is called before any method that directly references types in the Microsoft.Build namespace has been called." +
+                    Environment.NewLine +
+                    "This dependency arises from when a method is just-in-time compiled, so if it breaks even if the reference to a Microsoft.Build type has not been executed." +
+                    Environment.NewLine +
+                    "For more details, see aka.ms/RegisterMSBuildLocator" +
                     Environment.NewLine +
                     "Loaded MSBuild assemblies: " +
                     loadedAssemblyList;
