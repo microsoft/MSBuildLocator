@@ -12,7 +12,8 @@ using System.Text.RegularExpressions;
 namespace Microsoft.Build.Locator
 {
     internal static class DotNetSdkLocationHelper
-    {        
+    {
+        private static readonly Regex DotNetBasePathRegex = new Regex("Base Path:(.*)$", RegexOptions.Multiline);
         private static readonly Regex VersionRegex = new Regex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline);
         private static readonly Regex SdkRegex = new Regex(@"(\d+\.\d+\.\d+) \[(.*)]$", RegexOptions.Multiline);
 
@@ -77,7 +78,7 @@ namespace Microsoft.Build.Locator
             Process process;
             try
             {
-                var startInfo = new ProcessStartInfo("dotnet", "--list-sdks")
+                var startInfo = new ProcessStartInfo("dotnet", "--info")
                 {
                     WorkingDirectory = workingDirectory,
                     CreateNoWindow = true,
@@ -118,22 +119,45 @@ namespace Microsoft.Build.Locator
 
             var outputString = string.Join(Environment.NewLine, lines);
 
-            foreach (var line in lines)
+            var matched = DotNetBasePathRegex.Match(outputString);
+            if (!matched.Success)
             {
-                var sdkMatch = SdkRegex.Match(line);
-
-                if (!sdkMatch.Success)
-                    break;
-
-                var version = sdkMatch.Groups[1].Value.Trim();
-                var path = sdkMatch.Groups[2].Value.Trim();
-
-                path = Path.Combine(path, version) + Path.DirectorySeparatorChar;
-
-                basePaths.Add(path);
+                return null;
             }
+            
+            var basePath = matched.Groups[1].Value.Trim();
 
-            basePaths.Reverse(); // Reverse the list in order to preserve FirstOrDefault to always return the latest installed SDK for the time being
+            var lineSdkIndex = lines.FindIndex(line => line.Contains("SDKs installed"));
+
+            if (lineSdkIndex != -1)
+            {
+                lineSdkIndex++;
+
+                while (lineSdkIndex < lines.Count && !string.IsNullOrEmpty(lines[lineSdkIndex]))
+                {
+                    var sdkMatch = SdkRegex.Match(lines[lineSdkIndex]);
+
+                    if (!sdkMatch.Success)
+                        break;
+
+                    var version = sdkMatch.Groups[1].Value.Trim();
+                    var path = sdkMatch.Groups[2].Value.Trim();
+
+                    path = Path.Combine(path, version) + Path.DirectorySeparatorChar;
+
+                    if (path.Equals(basePath))
+					{
+                        // We insert the version in use at the top of the list in order to preserve FirstOrDefault to always return the version in use
+                        basePaths.Insert(0, path);
+                    }
+                    else
+					{
+                        basePaths.Add(path);
+                    }                    
+
+                    lineSdkIndex++;
+                }
+            }
             
             return basePaths;
         }
