@@ -142,16 +142,17 @@ namespace Microsoft.Build.Locator
 
                     var version = sdkMatch.Groups[1].Value.Trim();
                     var path = sdkMatch.Groups[2].Value.Trim();
-
-                    path = Path.Combine(path, version) + Path.DirectorySeparatorChar;
+                    var test = Path.Combine(path, version); 
+                    //path = Path.Combine(path, version) + Path.DirectorySeparatorChar;
+                    path = Path.Combine(path, version);
 
                     if (path.Equals(basePath))
-					{
-                        // We insert the version in use at the top of the list in order to preserve FirstOrDefault to always return the version in use
+                    {
+                        // We insert the version in use at the front of the list in order to ensure FirstOrDefault always returns the version in use.
                         basePaths.Insert(0, path);
                     }
                     else
-					{
+                    {
                         basePaths.Add(path);
                     }                    
 
