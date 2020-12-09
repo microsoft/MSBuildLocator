@@ -26,8 +26,6 @@ namespace Microsoft.Build.Locator
             "Microsoft.Build.Framework",
             "Microsoft.Build.Tasks.Core",
             "Microsoft.Build.Utilities.Core",
-            "System.Runtime.CompilerServices.Unsafe",
-            "System.Numerics.Vectors"
         };
 
 #if NET46
@@ -43,6 +41,14 @@ namespace Microsoft.Build.Locator
         ///     Gets a value indicating whether an instance of MSBuild is currently registered.
         /// </summary>
         public static bool IsRegistered => s_registeredHandler != null;
+
+        /// <summary>
+        ///     Gets a value indicating whether an instance of MSBuild can be registered.
+        /// </summary>
+        /// <remarks>
+        ///     If any Microsoft.Build assemblies are already loaded into the current AppDomain, the value will be false.
+        /// </remarks>
+        public static bool CanRegister => !IsRegistered && !LoadedMsBuildAssemblies.Any();
 
         private static IEnumerable<Assembly> LoadedMsBuildAssemblies => AppDomain.CurrentDomain.GetAssemblies().Where(IsMSBuildAssembly);
 
@@ -146,7 +152,7 @@ namespace Microsoft.Build.Locator
                 throw new ArgumentException($"Directory \"{msbuildPath}\" does not exist", nameof(msbuildPath));
             }
 
-            if (IsRegistered)
+            if (!CanRegister)
             {
                 var loadedAssemblyList = string.Join(Environment.NewLine, LoadedMsBuildAssemblies.Select(a => a.GetName()));
 
@@ -165,11 +171,7 @@ namespace Microsoft.Build.Locator
             }
 
             // AssemblyResolve event can fire multiple times for the same assembly, so keep track of what's already been loaded.
-            var loadedAssemblies = new Dictionary<string, Assembly>(s_msBuildAssemblies.Length);
-            foreach (Assembly assembly in LoadedMsBuildAssemblies)
-            {
-                loadedAssemblies.Add(assembly.GetName().Name, assembly);
-            }
+            var loadedAssemblies = new Dictionary<string, Assembly>();
 
             // Saving the handler in a static field so it can be unregistered later.
 #if NET46
@@ -181,7 +183,7 @@ namespace Microsoft.Build.Locator
 
             AppDomain.CurrentDomain.AssemblyResolve += s_registeredHandler;
 #else
-            s_registeredHandler = (assemblyLoadContext, assemblyName) => 
+            s_registeredHandler = (_, assemblyName) => 
             {
                 return TryLoadAssembly(assemblyName);
             };
@@ -196,27 +198,32 @@ namespace Microsoft.Build.Locator
                 // Assembly resolution is not thread-safe.
                 lock (loadedAssemblies)
                 {
-                    Assembly assembly;
-                    if (loadedAssemblies.TryGetValue(assemblyName.FullName, out assembly))
+                    if (loadedAssemblies.TryGetValue(assemblyName.FullName, out Assembly assembly))
                     {
                         return assembly;
                     }
 
-                    if (IsMSBuildAssembly(assemblyName))
+                    string targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
+                    if (File.Exists(targetAssembly))
                     {
-                        var targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
-                        if (File.Exists(targetAssembly))
+                        // If the assembly was already loaded, return that. This could theoretically cause version problems, but the user shouldn't be
+                        // trying to load an MSBuild that is incompatible with the version of the assembly they currently have loaded.
+                        Assembly loadedAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name.Equals(assemblyName.Name));
+                        if (loadedAssembly != null)
                         {
-                            // Automatically unregister the handler once all supported assemblies have been loaded.
-                            if (Interlocked.Increment(ref numResolvedAssemblies) == s_msBuildAssemblies.Length)
-                            {
-                                Unregister();
-                            }
-
-                            assembly = Assembly.LoadFrom(targetAssembly);
-                            loadedAssemblies.Add(assemblyName.FullName, assembly);
-                            return assembly;
+                            loadedAssemblies.Add(assemblyName.FullName, loadedAssembly);
+                            return loadedAssembly;
                         }
+
+                        // Automatically unregister the handler once all supported assemblies have been loaded.
+                        if (Interlocked.Increment(ref numResolvedAssemblies) == s_msBuildAssemblies.Length)
+                        {
+                            Unregister();
+                        }
+
+                        assembly = Assembly.LoadFrom(targetAssembly);
+                        loadedAssemblies.Add(assemblyName.FullName, assembly);
+                        return assembly;
                     }
 
                     return null;
