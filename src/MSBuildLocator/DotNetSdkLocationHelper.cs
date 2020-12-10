@@ -96,7 +96,7 @@ namespace Microsoft.Build.Locator
             }
 
             if (process.HasExited)
-            {               
+            {
                 yield break;
             }
 
@@ -117,7 +117,7 @@ namespace Microsoft.Build.Locator
 
             var matched = DotNetBasePathRegex.Match(outputString);
             if (!matched.Success)
-            {                
+            {
                 yield break; 
             }
             
