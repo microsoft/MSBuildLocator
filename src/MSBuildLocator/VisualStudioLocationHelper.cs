@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Setup.Configuration;
 
@@ -53,24 +54,17 @@ namespace Microsoft.Build.Locator
                     if (state == InstanceState.Complete ||
                         (state.HasFlag(InstanceState.Registered) && state.HasFlag(InstanceState.NoRebootRequired)))
                     {
-                        bool instanceHasMSBuild = false;
-
-                        foreach (ISetupPackageReference package in instance.GetPackages())
-                        {
-                            if (string.Equals(package.GetId(), "Microsoft.Component.MSBuild", StringComparison.OrdinalIgnoreCase))
-                            {
-                                instanceHasMSBuild = true;
-                                break;
-                            }
-                        }
+                        bool instanceHasMSBuild = instance.GetPackages().Any(package => package.GetId().Equals("Microsoft.Component.MSBuild", StringComparison.OrdinalIgnoreCase));
 
                         if (instanceHasMSBuild)
                         {
+                            bool instanceHasCSCompiler = instance.GetPackages().Any(package => package.GetId().Equals("Microsoft.VisualStudio.Component.Roslyn.Compiler", StringComparison.OrdinalIgnoreCase));
                             validInstances.Add(new VisualStudioInstance(
                                 instance.GetDisplayName(),
                                 instance.GetInstallationPath(),
                                 version,
-                                DiscoveryType.VisualStudioSetup));
+                                DiscoveryType.VisualStudioSetup,
+                                instanceHasCSCompiler));
                         }
                     }
                 } while (fetched > 0);

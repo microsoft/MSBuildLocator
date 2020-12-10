@@ -11,12 +11,13 @@ namespace Microsoft.Build.Locator
     /// </summary>
     public class VisualStudioInstance
     {
-        internal VisualStudioInstance(string name, string path, Version version, DiscoveryType discoveryType)
+        internal VisualStudioInstance(string name, string path, Version version, DiscoveryType discoveryType, bool hasCSharp)
         {
             Name = name;
             VisualStudioRootPath = path;
             Version = version;
             DiscoveryType = discoveryType;
+            ContainsRoslynCompiler = hasCSharp;
 
             switch (discoveryType)
             {
@@ -59,5 +60,10 @@ namespace Microsoft.Build.Locator
         ///     Indicates how this instance was discovered.
         /// </summary>
         public DiscoveryType DiscoveryType { get; }
+
+        /// <summary>
+        /// Indicates whether this instance has the C# package installed.
+        /// </summary>
+        public bool ContainsRoslynCompiler { get; }
     }
 }
