@@ -415,8 +415,6 @@ namespace Microsoft.Build.Locator
             }
         }
 
-
-
 #if NET46
         private static VisualStudioInstance GetDevConsoleInstance()
         {
