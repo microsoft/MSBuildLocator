@@ -58,10 +58,8 @@ namespace Microsoft.Build.Locator
         }
 
         public static IEnumerable<VisualStudioInstance> GetInstances(string workingDirectory)
-        {
-            var basePaths = GetDotNetBasePaths(workingDirectory);
-
-            foreach (var basePath in basePaths)
+        {            
+            foreach (var basePath in GetDotNetBasePaths(workingDirectory))
             {
                 var dotnetSdk = GetInstance(basePath);
                 if (dotnetSdk != null)
@@ -69,12 +67,10 @@ namespace Microsoft.Build.Locator
             }
         }
 
-        private static List<string> GetDotNetBasePaths(string workingDirectory)
+        private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory)
         {
             const string DOTNET_CLI_UI_LANGUAGE = nameof(DOTNET_CLI_UI_LANGUAGE);
-
-            List<string> basePaths = new List<string>();
-
+            
             Process process;
             try
             {
@@ -96,12 +92,12 @@ namespace Microsoft.Build.Locator
             catch
             {
                 // when error running dotnet command, consider dotnet as not available
-                return null;
+                yield break;
             }
 
             if (process.HasExited)
-            {
-                return null;
+            {               
+                yield break;
             }
 
             var lines = new List<string>();
@@ -121,11 +117,13 @@ namespace Microsoft.Build.Locator
 
             var matched = DotNetBasePathRegex.Match(outputString);
             if (!matched.Success)
-            {
-                return null;
+            {                
+                yield break; 
             }
             
             var basePath = matched.Groups[1].Value.Trim();
+
+            yield return basePath; // We return the version in use at the front of the list in order to ensure FirstOrDefault always returns the version in use.
 
             var lineSdkIndex = lines.FindIndex(line => line.Contains("SDKs installed"));
 
@@ -144,22 +142,13 @@ namespace Microsoft.Build.Locator
                     var path = sdkMatch.Groups[2].Value.Trim();
                     
                     path = Path.Combine(path, version) + Path.DirectorySeparatorChar;
-                    
-                    if (path.Equals(basePath))
-                    {
-                        // We insert the version in use at the front of the list in order to ensure FirstOrDefault always returns the version in use.
-                        basePaths.Insert(0, path);
-                    }
-                    else
-                    {
-                        basePaths.Add(path);
-                    }                    
 
+                    if (!path.Equals(basePath))
+                        yield return path; 
+                                    
                     lineSdkIndex++;
                 }
             }
-            
-            return basePaths;
         }
     }
 }
