@@ -27,6 +27,9 @@ namespace Microsoft.Build.Locator
         /// </summary>
         DotNetSdk = 4,
 
+        /// <summary>
+        ///     Discovery via Mono path testing.
+        /// </summary>
         Mono = 8
     }
 }
