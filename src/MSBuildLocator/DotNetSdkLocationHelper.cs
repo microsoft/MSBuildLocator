@@ -35,7 +35,11 @@ namespace Microsoft.Build.Locator
                 return null;
             }
 
-            if (!Version.TryParse(File.ReadAllText(versionPath), out Version version) || version > Environment.Version)
+            // Preview versions contain a hyphen after the numeric part of the version. Version.TryParse doesn't accept that.
+            string parseableVersion = File.ReadAllText(versionPath);
+            int indexOfHyphen = parseableVersion.IndexOf('-');
+            parseableVersion = indexOfHyphen >= 0 ? parseableVersion.Substring(0, indexOfHyphen) : parseableVersion;
+            if (!Version.TryParse(parseableVersion, out Version version) || version > Environment.Version)
             {
                 return null;
             }
