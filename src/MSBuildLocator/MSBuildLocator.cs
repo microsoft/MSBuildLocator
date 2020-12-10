@@ -494,6 +494,5 @@ namespace Microsoft.Build.Locator
                 return _isOSX.Value;
             }
         }
-
     }
 }
