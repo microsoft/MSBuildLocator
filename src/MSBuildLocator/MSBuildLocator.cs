@@ -206,21 +206,6 @@ namespace Microsoft.Build.Locator
                     string targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
                     if (File.Exists(targetAssembly))
                     {
-                        // If the assembly was already loaded, return that. This could theoretically cause version problems, but the user shouldn't be
-                        // trying to load an MSBuild that is incompatible with the version of the assembly they currently have loaded.
-                        Assembly loadedAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name.Equals(assemblyName.Name));
-                        if (loadedAssembly != null)
-                        {
-                            loadedAssemblies.Add(assemblyName.FullName, loadedAssembly);
-                            return loadedAssembly;
-                        }
-
-                        // Automatically unregister the handler once all supported assemblies have been loaded.
-                        if (Interlocked.Increment(ref numResolvedAssemblies) == s_msBuildAssemblies.Length)
-                        {
-                            Unregister();
-                        }
-
                         assembly = Assembly.LoadFrom(targetAssembly);
                         loadedAssemblies.Add(assemblyName.FullName, assembly);
                         return assembly;
