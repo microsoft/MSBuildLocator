@@ -324,8 +324,7 @@ namespace Microsoft.Build.Locator
 #endif
 
 #if NETCOREAPP
-            var dotnetSdk = DotNetSdkLocationHelper.GetInstance(options.WorkingDirectory);
-            if (dotnetSdk != null)
+            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory))
                 yield return dotnetSdk;
 #endif
         }

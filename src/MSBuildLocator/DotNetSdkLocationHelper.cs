@@ -15,12 +15,16 @@ namespace Microsoft.Build.Locator
     {
         private static readonly Regex DotNetBasePathRegex = new Regex("Base Path:(.*)$", RegexOptions.Multiline);
         private static readonly Regex VersionRegex = new Regex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline);
+        private static readonly Regex SdkRegex = new Regex(@"(\S+) \[(.*)]$", RegexOptions.Multiline);
 
-        public static VisualStudioInstance GetInstance(string workingDirectory)
-        {
-            string dotNetSdkPath = GetDotNetBasePath(workingDirectory);
+        public static VisualStudioInstance GetInstance(string dotNetSdkPath)
+        {            
+            if (string.IsNullOrWhiteSpace(dotNetSdkPath))
+            {
+                return null;
+            }
 
-            if (string.IsNullOrWhiteSpace(dotNetSdkPath) || !File.Exists(Path.Combine(dotNetSdkPath, "Microsoft.Build.dll")))
+            if (!File.Exists(Path.Combine(dotNetSdkPath, "Microsoft.Build.dll")))
             {
                 return null;
             }
@@ -55,10 +59,20 @@ namespace Microsoft.Build.Locator
                 discoveryType: DiscoveryType.DotNetSdk);
         }
 
-        private static string GetDotNetBasePath(string workingDirectory)
+        public static IEnumerable<VisualStudioInstance> GetInstances(string workingDirectory)
+        {            
+            foreach (var basePath in GetDotNetBasePaths(workingDirectory))
+            {
+                var dotnetSdk = GetInstance(basePath);
+                if (dotnetSdk != null)
+                    yield return dotnetSdk;
+            }
+        }
+
+        private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory)
         {
             const string DOTNET_CLI_UI_LANGUAGE = nameof(DOTNET_CLI_UI_LANGUAGE);
-
+            
             Process process;
             try
             {
@@ -80,12 +94,12 @@ namespace Microsoft.Build.Locator
             catch
             {
                 // when error running dotnet command, consider dotnet as not available
-                return null;
+                yield break;
             }
 
             if (process.HasExited)
             {
-                return null;
+                yield break;
             }
 
             var lines = new List<string>();
@@ -106,10 +120,37 @@ namespace Microsoft.Build.Locator
             var matched = DotNetBasePathRegex.Match(outputString);
             if (!matched.Success)
             {
-                return null;
+                yield break; 
             }
+            
+            var basePath = matched.Groups[1].Value.Trim();
 
-            return matched.Groups[1].Value.Trim();
+            yield return basePath; // We return the version in use at the front of the list in order to ensure FirstOrDefault always returns the version in use.
+
+            var lineSdkIndex = lines.FindIndex(line => line.Contains("SDKs installed"));
+
+            if (lineSdkIndex != -1)
+            {
+                lineSdkIndex++;
+
+                while (lineSdkIndex < lines.Count && !string.IsNullOrEmpty(lines[lineSdkIndex]))
+                {
+                    var sdkMatch = SdkRegex.Match(lines[lineSdkIndex]);
+
+                    if (!sdkMatch.Success)
+                        break;
+
+                    var version = sdkMatch.Groups[1].Value.Trim();
+                    var path = sdkMatch.Groups[2].Value.Trim();
+                    
+                    path = Path.Combine(path, version) + Path.DirectorySeparatorChar;
+
+                    if (!path.Equals(basePath))
+                        yield return path; 
+                                    
+                    lineSdkIndex++;
+                }
+            }
         }
     }
 }
