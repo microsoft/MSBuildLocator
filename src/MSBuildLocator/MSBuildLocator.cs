@@ -35,7 +35,7 @@ namespace Microsoft.Build.Locator
 #endif
 
         // Used to determine when it's time to unregister the registeredHandler.
-        private static int numResolvedAssemblies;
+        private static bool registerCalled = false;
 
         /// <summary>
         ///     Gets a value indicating whether an instance of MSBuild is currently registered.
@@ -142,6 +142,7 @@ namespace Microsoft.Build.Locator
         /// </param>
         public static void RegisterMSBuildPath(string msbuildPath)
         {
+            registerCalled = true;
             if (string.IsNullOrWhiteSpace(msbuildPath))
             {
                 throw new ArgumentException("Value may not be null or whitespace", nameof(msbuildPath));
@@ -227,7 +228,7 @@ namespace Microsoft.Build.Locator
             if (!IsRegistered)
             {
                 var error = $"{typeof(MSBuildLocator)}.{nameof(Unregister)} was called, but no MSBuild instance is registered." + Environment.NewLine;
-                if (numResolvedAssemblies == 0)
+                if (!registerCalled)
                 {
                     error += $"Ensure that {nameof(RegisterInstance)}, {nameof(RegisterMSBuildPath)}, or {nameof(RegisterDefaults)} is called before calling this method.";
                 }
