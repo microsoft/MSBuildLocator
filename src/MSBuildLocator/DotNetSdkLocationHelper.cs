@@ -14,17 +14,13 @@ namespace Microsoft.Build.Locator
     internal static class DotNetSdkLocationHelper
     {
         private static readonly Regex DotNetBasePathRegex = new Regex("Base Path:(.*)$", RegexOptions.Multiline);
+        private static readonly Regex VersionRegex = new Regex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline);
 
         public static VisualStudioInstance GetInstance(string workingDirectory)
         {
             string dotNetSdkPath = GetDotNetBasePath(workingDirectory);
 
-            if (string.IsNullOrWhiteSpace(dotNetSdkPath))
-            {
-                return null;
-            }
-
-            if (!File.Exists(Path.Combine(dotNetSdkPath, "Microsoft.Build.dll")))
+            if (string.IsNullOrWhiteSpace(dotNetSdkPath) || !File.Exists(Path.Combine(dotNetSdkPath, "Microsoft.Build.dll")))
             {
                 return null;
             }
@@ -36,10 +32,18 @@ namespace Microsoft.Build.Locator
             }
 
             // Preview versions contain a hyphen after the numeric part of the version. Version.TryParse doesn't accept that.
-            string parseableVersion = File.ReadAllText(versionPath);
-            int indexOfHyphen = parseableVersion.IndexOf('-');
-            parseableVersion = indexOfHyphen >= 0 ? parseableVersion.Substring(0, indexOfHyphen) : parseableVersion;
-            if (!Version.TryParse(parseableVersion, out Version version) || version > Environment.Version)
+            Match versionMatch = VersionRegex.Match(File.ReadAllText(versionPath));
+
+            if (!versionMatch.Success ||
+                !int.TryParse(versionMatch.Groups[1].Value, out int major) ||
+                !int.TryParse(versionMatch.Groups[2].Value, out int minor) ||
+                !int.TryParse(versionMatch.Groups[3].Value, out int patch))
+            {
+                return null;
+            }
+
+            Version version = new Version(major, minor, patch);
+            if (version.Major > Environment.Version.Major || (version.Major == Environment.Version.Major && version.Minor > Environment.Version.Minor))
             {
                 return null;
             }
