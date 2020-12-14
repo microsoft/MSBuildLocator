@@ -46,16 +46,10 @@ namespace Microsoft.Build.Locator
                 return null;
             }
 
-            Version version = new Version(major, minor, patch);
-            if (version.Major > Environment.Version.Major || (version.Major == Environment.Version.Major && version.Minor > Environment.Version.Minor))
-            {
-                return null;
-            }
-
             return new VisualStudioInstance(
                 name: ".NET Core SDK",
                 path: dotNetSdkPath,
-                version: version,
+                version: new Version(major, minor, patch),
                 discoveryType: DiscoveryType.DotNetSdk);
         }
 
