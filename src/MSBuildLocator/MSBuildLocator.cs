@@ -94,9 +94,12 @@ namespace Microsoft.Build.Locator
         public static VisualStudioInstance RegisterDefaults()
         {
             IEnumerable<VisualStudioInstance> instances = GetInstances(VisualStudioInstanceQueryOptions.Default);
-            VisualStudioInstance instance = instances.Where(
-                inst => inst.Version.Major < Environment.Version.Major || (inst.Version.Major == Environment.Version.Major && inst.Version.Minor <= Environment.Version.Minor)
+            VisualStudioInstance instance =
+#if NETCOREAPP
+                instances.Where(inst =>
+                inst.Version.Major < Environment.Version.Major || (inst.Version.Major == Environment.Version.Major && inst.Version.Minor <= Environment.Version.Minor)
                 ).FirstOrDefault() ??
+#endif
                 instances.FirstOrDefault();
             if (instance == null)
             {
