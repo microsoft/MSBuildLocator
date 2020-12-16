@@ -205,7 +205,9 @@ namespace Microsoft.Build.Locator
                     }
 
                     string targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
-                    if (File.Exists(targetAssembly))
+                    if (File.Exists(targetAssembly) || File.Exists(targetAssembly =
+                        // Finds and loads NuGet assemblies if msbuildPath is in a VS installation
+                        Path.GetFullPath(Path.Combine(msbuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet", assemblyName.Name + ".dll"))))
                     {
                         assembly = Assembly.LoadFrom(targetAssembly);
                         loadedAssemblies.Add(assemblyName.FullName, assembly);
