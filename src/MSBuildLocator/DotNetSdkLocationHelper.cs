@@ -41,7 +41,9 @@ namespace Microsoft.Build.Locator
             if (!versionMatch.Success ||
                 !int.TryParse(versionMatch.Groups[1].Value, out int major) ||
                 !int.TryParse(versionMatch.Groups[2].Value, out int minor) ||
-                !int.TryParse(versionMatch.Groups[3].Value, out int patch))
+                !int.TryParse(versionMatch.Groups[3].Value, out int patch) ||
+                major > Environment.Version.Major ||
+                (major == Environment.Version.Major && minor > Environment.Version.Minor))
             {
                 return null;
             }

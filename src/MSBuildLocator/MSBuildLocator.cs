@@ -93,14 +93,7 @@ namespace Microsoft.Build.Locator
         /// <returns>Instance of Visual Studio found and registered.</returns>
         public static VisualStudioInstance RegisterDefaults()
         {
-            IEnumerable<VisualStudioInstance> instances = GetInstances(VisualStudioInstanceQueryOptions.Default);
-            VisualStudioInstance instance =
-#if NETCOREAPP
-                instances.Where(inst =>
-                inst.Version.Major < Environment.Version.Major || (inst.Version.Major == Environment.Version.Major && inst.Version.Minor <= Environment.Version.Minor)
-                ).FirstOrDefault() ??
-#endif
-                instances.FirstOrDefault();
+            VisualStudioInstance instance = GetInstances(VisualStudioInstanceQueryOptions.Default).FirstOrDefault();
             if (instance == null)
             {
                 var error = "No instances of MSBuild could be detected." +
