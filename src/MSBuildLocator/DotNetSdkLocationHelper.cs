@@ -15,7 +15,7 @@ namespace Microsoft.Build.Locator
     {
         private static readonly Regex DotNetBasePathRegex = new Regex("Base Path:(.*)$", RegexOptions.Multiline);
         private static readonly Regex VersionRegex = new Regex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline);
-        private static readonly Regex SdkRegex = new Regex(@"(\S+) \[(.*)]$", RegexOptions.Multiline);
+        private static readonly Regex SdkRegex = new Regex(@"(\S+) \[(.*?)]$", RegexOptions.Multiline);
 
         public static VisualStudioInstance GetInstance(string dotNetSdkPath)
         {            
@@ -124,7 +124,6 @@ namespace Microsoft.Build.Locator
             var lineSdkIndex = lines.FindIndex(line => line.Contains("SDKs installed"));
 
             List<string> paths = new List<string>();
-
             if (lineSdkIndex != -1)
             {
                 lineSdkIndex++;
