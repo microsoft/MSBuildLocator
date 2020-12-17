@@ -35,8 +35,8 @@ namespace Microsoft.Build.Locator
                 return null;
             }
 
-            string versionContent = File.ReadAllText(versionPath);
-            Match versionMatch = VersionRegex.Match(versionContent);
+            // Preview versions contain a hyphen after the numeric part of the version. Version.TryParse doesn't accept that.
+            Match versionMatch = VersionRegex.Match(File.ReadAllText(versionPath));
 
             if (!versionMatch.Success)
             {
@@ -46,6 +46,16 @@ namespace Microsoft.Build.Locator
             if (!int.TryParse(versionMatch.Groups[1].Value, out int major) ||
                 !int.TryParse(versionMatch.Groups[2].Value, out int minor) ||
                 !int.TryParse(versionMatch.Groups[3].Value, out int patch))
+            {
+                return null;
+            }
+            
+            // Components of the SDK often have dependencies on the runtime they shipped with, including that several tasks that shipped
+            // in the .NET 5 SDK rely on the .NET 5.0 runtime. Assuming the runtime that shipped with a particular SDK has the same version,
+            // this ensures that we don't choose an SDK that doesn't work with the runtime of the chosen application. This is not guaranteed
+            // to always work but should work for now.
+            if (major > Environment.Version.Major ||
+                (major == Environment.Version.Major && minor > Environment.Version.Minor))
             {
                 return null;
             }
@@ -127,6 +137,7 @@ namespace Microsoft.Build.Locator
 
             var lineSdkIndex = lines.FindIndex(line => line.Contains("SDKs installed"));
 
+            List<string> paths = new List<string>();
             if (lineSdkIndex != -1)
             {
                 lineSdkIndex++;
@@ -144,10 +155,19 @@ namespace Microsoft.Build.Locator
                     path = Path.Combine(path, version) + Path.DirectorySeparatorChar;
 
                     if (!path.Equals(basePath))
-                        yield return path; 
+                        paths.Add(path); 
                                     
                     lineSdkIndex++;
                 }
+            }
+
+            // The paths are sorted in increasing order. We want to return the newest SDKs first, however,
+            // so iterate over the list in reverse order. If basePath is disqualified because it was later
+            // than the runtime version, this ensures that RegisterDefaults will return the latest valid
+            // SDK instead of the earliest installed.
+            for (int i = paths.Count - 1; i >= 0; i--)
+            {
+                yield return paths[i];
             }
         }
     }
