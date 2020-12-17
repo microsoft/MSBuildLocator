@@ -43,6 +43,6 @@ jobs:
       uses: actions/upload-artifact@v2
       if: ${{ always() }}
       with:
-        name: package
+        name: logs
         path: '**/*.binlog'
         if-no-files-found: error
