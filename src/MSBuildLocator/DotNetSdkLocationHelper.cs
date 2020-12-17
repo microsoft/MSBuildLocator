@@ -38,11 +38,23 @@ namespace Microsoft.Build.Locator
             // Preview versions contain a hyphen after the numeric part of the version. Version.TryParse doesn't accept that.
             Match versionMatch = VersionRegex.Match(File.ReadAllText(versionPath));
 
-            if (!versionMatch.Success ||
-                !int.TryParse(versionMatch.Groups[1].Value, out int major) ||
+            if (!versionMatch.Success)
+            {
+                return null;
+            }
+
+            if (!int.TryParse(versionMatch.Groups[1].Value, out int major) ||
                 !int.TryParse(versionMatch.Groups[2].Value, out int minor) ||
-                !int.TryParse(versionMatch.Groups[3].Value, out int patch) ||
-                major > Environment.Version.Major ||
+                !int.TryParse(versionMatch.Groups[3].Value, out int patch))
+            {
+                return null;
+            }
+            
+            // Components of the SDK often have dependencies on the runtime they shipped with, including that several tasks that shipped
+            // in the .NET 5 SDK rely on the .NET 5.0 runtime. Assuming the runtime that shipped with a particular SDK has the same version,
+            // this ensures that we don't choose an SDK that doesn't work with the chosen runtime. This is not guaranteed to always work but
+            // should work for now.
+            if (major > Environment.Version.Major ||
                 (major == Environment.Version.Major && minor > Environment.Version.Minor))
             {
                 return null;
