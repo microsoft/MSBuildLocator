@@ -52,8 +52,8 @@ namespace Microsoft.Build.Locator
             
             // Components of the SDK often have dependencies on the runtime they shipped with, including that several tasks that shipped
             // in the .NET 5 SDK rely on the .NET 5.0 runtime. Assuming the runtime that shipped with a particular SDK has the same version,
-            // this ensures that we don't choose an SDK that doesn't work with the chosen runtime. This is not guaranteed to always work but
-            // should work for now.
+            // this ensures that we don't choose an SDK that doesn't work with the runtime of the chosen application. This is not guaranteed
+            // to always work but should work for now.
             if (major > Environment.Version.Major ||
                 (major == Environment.Version.Major && minor > Environment.Version.Minor))
             {
