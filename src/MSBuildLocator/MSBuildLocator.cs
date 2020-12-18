@@ -34,8 +34,8 @@ namespace Microsoft.Build.Locator
         private static Func<AssemblyLoadContext, AssemblyName, Assembly> s_registeredHandler;
 #endif
 
-        // AssemblyResolve event can fire multiple times for the same assembly, so keep track of what's already been loaded.
-        private static Dictionary<string, Assembly> loadedAssemblies = new Dictionary<string, Assembly>();
+        // Used to determine when it's time to unregister the registeredHandler.
+        private static bool registerCalled = false;
 
         /// <summary>
         ///     Gets a value indicating whether an instance of MSBuild is currently registered.
@@ -48,7 +48,9 @@ namespace Microsoft.Build.Locator
         /// <remarks>
         ///     If any Microsoft.Build assemblies are already loaded into the current AppDomain, the value will be false.
         /// </remarks>
-        public static bool CanRegister => !IsRegistered && !loadedAssemblies.Any();
+        public static bool CanRegister => !IsRegistered && !LoadedMsBuildAssemblies.Any();
+
+        private static IEnumerable<Assembly> LoadedMsBuildAssemblies => AppDomain.CurrentDomain.GetAssemblies().Where(IsMSBuildAssembly);
 
         /// <summary>
         ///     Query for all Visual Studio instances.
@@ -140,6 +142,7 @@ namespace Microsoft.Build.Locator
         /// </param>
         public static void RegisterMSBuildPath(string msbuildPath)
         {
+            registerCalled = true;
             if (string.IsNullOrWhiteSpace(msbuildPath))
             {
                 throw new ArgumentException("Value may not be null or whitespace", nameof(msbuildPath));
@@ -152,6 +155,8 @@ namespace Microsoft.Build.Locator
 
             if (!CanRegister)
             {
+                var loadedAssemblyList = string.Join(Environment.NewLine, LoadedMsBuildAssemblies.Select(a => a.GetName()));
+
                 var error = $"{typeof(MSBuildLocator)}.{nameof(RegisterInstance)} was called, but MSBuild assemblies were already loaded." +
                     Environment.NewLine +
                     $"Ensure that {nameof(RegisterInstance)} is called before any method that directly references types in the Microsoft.Build namespace has been called." +
@@ -161,10 +166,13 @@ namespace Microsoft.Build.Locator
                     "For more details, see aka.ms/RegisterMSBuildLocator" +
                     Environment.NewLine +
                     "Loaded MSBuild assemblies: " +
-                    string.Join(Environment.NewLine, loadedAssemblies.Keys);
+                    loadedAssemblyList;
 
                 throw new InvalidOperationException(error);
             }
+
+            // AssemblyResolve event can fire multiple times for the same assembly, so keep track of what's already been loaded.
+            var loadedAssemblies = new Dictionary<string, Assembly>();
 
             // Saving the handler in a static field so it can be unregistered later.
 #if NET46
@@ -221,9 +229,18 @@ namespace Microsoft.Build.Locator
         {
             if (!IsRegistered)
             {
-                var error = $"{typeof(MSBuildLocator)}.{nameof(Unregister)} was called, but no MSBuild instance is registered." + Environment.NewLine +
-                            $"Ensure that {nameof(RegisterInstance)}, {nameof(RegisterMSBuildPath)}, or {nameof(RegisterDefaults)} is called before calling this method." + Environment.NewLine +
-                            $"{nameof(IsRegistered)} should be used to determine whether calling {nameof(Unregister)} is a valid operation.";
+                var error = $"{typeof(MSBuildLocator)}.{nameof(Unregister)} was called, but no MSBuild instance is registered." + Environment.NewLine;
+                if (!registerCalled)
+                {
+                    error += $"Ensure that {nameof(RegisterInstance)}, {nameof(RegisterMSBuildPath)}, or {nameof(RegisterDefaults)} is called before calling this method.";
+                }
+                else
+                {
+                    error += "Unregistration automatically occurs once all supported assemblies are loaded into the current AppDomain and so generally is not necessary to call directly.";
+                }
+
+                error += Environment.NewLine +
+                         $"{nameof(IsRegistered)} should be used to determine whether calling {nameof(Unregister)} is a valid operation.";
 
                 throw new InvalidOperationException(error);
             }
