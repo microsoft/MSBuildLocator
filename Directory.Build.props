@@ -3,6 +3,7 @@
   <PropertyGroup>
     <Authors>Microsoft</Authors>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <PackageIcon>MSBuild-NuGet-Icon.png</PackageIcon>
     <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=825694</PackageIconUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/microsoft/MSBuildLocator</PackageProjectUrl>
@@ -27,6 +28,12 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
     <PackageReference Include="Nerdbank.GitVersioning" Version="2.2.13" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)\branding\MSBuild-NuGet-Icon.png"
+          Pack="true"
+          PackagePath="\" />
   </ItemGroup>
 
 </Project>
