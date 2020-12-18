@@ -5,7 +5,7 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=825694</PackageIconUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/Microsoft/MSBuildLocator</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/microsoft/MSBuildLocator</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <Tags>MSBuild</Tags>
 
