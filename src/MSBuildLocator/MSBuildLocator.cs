@@ -26,8 +26,6 @@ namespace Microsoft.Build.Locator
             "Microsoft.Build.Framework",
             "Microsoft.Build.Tasks.Core",
             "Microsoft.Build.Utilities.Core",
-            "System.Runtime.CompilerServices.Unsafe",
-            "System.Numerics.Vectors"
         };
 
 #if NET46
@@ -35,9 +33,6 @@ namespace Microsoft.Build.Locator
 #else
         private static Func<AssemblyLoadContext, AssemblyName, Assembly> s_registeredHandler;
 #endif
-
-        // Used to determine when it's time to unregister the registeredHandler.
-        private static int numResolvedAssemblies;
 
         /// <summary>
         ///     Gets a value indicating whether an instance of MSBuild is currently registered.
@@ -173,7 +168,7 @@ namespace Microsoft.Build.Locator
             }
 
             // AssemblyResolve event can fire multiple times for the same assembly, so keep track of what's already been loaded.
-            var loadedAssemblies = new Dictionary<string, Assembly>(s_msBuildAssemblies.Length);
+            var loadedAssemblies = new Dictionary<string, Assembly>();
 
             // Saving the handler in a static field so it can be unregistered later.
 #if NET46
@@ -185,7 +180,7 @@ namespace Microsoft.Build.Locator
 
             AppDomain.CurrentDomain.AssemblyResolve += s_registeredHandler;
 #else
-            s_registeredHandler = (assemblyLoadContext, assemblyName) => 
+            s_registeredHandler = (_, assemblyName) => 
             {
                 return TryLoadAssembly(assemblyName);
             };
@@ -200,27 +195,19 @@ namespace Microsoft.Build.Locator
                 // Assembly resolution is not thread-safe.
                 lock (loadedAssemblies)
                 {
-                    Assembly assembly;
-                    if (loadedAssemblies.TryGetValue(assemblyName.FullName, out assembly))
+                    if (loadedAssemblies.TryGetValue(assemblyName.FullName, out Assembly assembly))
                     {
                         return assembly;
                     }
 
-                    if (IsMSBuildAssembly(assemblyName))
+                    // Look in the MSBuild folder for any unresolved reference. It may be a dependency
+                    // of MSBuild or a task.
+                    string targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
+                    if (File.Exists(targetAssembly))
                     {
-                        var targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
-                        if (File.Exists(targetAssembly))
-                        {
-                            // Automatically unregister the handler once all supported assemblies have been loaded.
-                            if (Interlocked.Increment(ref numResolvedAssemblies) == s_msBuildAssemblies.Length)
-                            {
-                                Unregister();
-                            }
-
-                            assembly = Assembly.LoadFrom(targetAssembly);
-                            loadedAssemblies.Add(assemblyName.FullName, assembly);
-                            return assembly;
-                        }
+                        assembly = Assembly.LoadFrom(targetAssembly);
+                        loadedAssemblies.Add(assemblyName.FullName, assembly);
+                        return assembly;
                     }
 
                     return null;
@@ -238,19 +225,9 @@ namespace Microsoft.Build.Locator
         {
             if (!IsRegistered)
             {
-                var error = $"{typeof(MSBuildLocator)}.{nameof(Unregister)} was called, but no MSBuild instance is registered." + Environment.NewLine;
-                if (numResolvedAssemblies == 0)
-                {
-                    error += $"Ensure that {nameof(RegisterInstance)}, {nameof(RegisterMSBuildPath)}, or {nameof(RegisterDefaults)} is called before calling this method.";
-                }
-                else
-                {
-                    error += "Unregistration automatically occurs once all supported assemblies are loaded into the current AppDomain and so generally is not necessary to call directly.";
-                }
-
-                error += Environment.NewLine +
-                         $"{nameof(IsRegistered)} should be used to determine whether calling {nameof(Unregister)} is a valid operation.";
-
+                var error = $"{typeof(MSBuildLocator)}.{nameof(Unregister)} was called, but no MSBuild instance is registered." + Environment.NewLine +
+                            $"Ensure that {nameof(RegisterInstance)}, {nameof(RegisterMSBuildPath)}, or {nameof(RegisterDefaults)} is called before calling this method." + Environment.NewLine +
+                            $"{nameof(IsRegistered)} should be used to determine whether calling {nameof(Unregister)} is a valid operation.";
                 throw new InvalidOperationException(error);
             }
 
