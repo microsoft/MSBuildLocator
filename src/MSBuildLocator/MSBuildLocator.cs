@@ -34,9 +34,6 @@ namespace Microsoft.Build.Locator
         private static Func<AssemblyLoadContext, AssemblyName, Assembly> s_registeredHandler;
 #endif
 
-        // Used to determine when it's time to unregister the registeredHandler.
-        private static bool registerCalled = false;
-
         /// <summary>
         ///     Gets a value indicating whether an instance of MSBuild is currently registered.
         /// </summary>
@@ -142,7 +139,6 @@ namespace Microsoft.Build.Locator
         /// </param>
         public static void RegisterMSBuildPath(string msbuildPath)
         {
-            registerCalled = true;
             if (string.IsNullOrWhiteSpace(msbuildPath))
             {
                 throw new ArgumentException("Value may not be null or whitespace", nameof(msbuildPath));
@@ -229,19 +225,9 @@ namespace Microsoft.Build.Locator
         {
             if (!IsRegistered)
             {
-                var error = $"{typeof(MSBuildLocator)}.{nameof(Unregister)} was called, but no MSBuild instance is registered." + Environment.NewLine;
-                if (!registerCalled)
-                {
-                    error += $"Ensure that {nameof(RegisterInstance)}, {nameof(RegisterMSBuildPath)}, or {nameof(RegisterDefaults)} is called before calling this method.";
-                }
-                else
-                {
-                    error += "Unregistration automatically occurs once all supported assemblies are loaded into the current AppDomain and so generally is not necessary to call directly.";
-                }
-
-                error += Environment.NewLine +
-                         $"{nameof(IsRegistered)} should be used to determine whether calling {nameof(Unregister)} is a valid operation.";
-
+                var error = $"{typeof(MSBuildLocator)}.{nameof(Unregister)} was called, but no MSBuild instance is registered." + Environment.NewLine +
+                            $"Ensure that {nameof(RegisterInstance)}, {nameof(RegisterMSBuildPath)}, or {nameof(RegisterDefaults)} is called before calling this method." + Environment.NewLine +
+                            $"{nameof(IsRegistered)} should be used to determine whether calling {nameof(Unregister)} is a valid operation.";
                 throw new InvalidOperationException(error);
             }
 
