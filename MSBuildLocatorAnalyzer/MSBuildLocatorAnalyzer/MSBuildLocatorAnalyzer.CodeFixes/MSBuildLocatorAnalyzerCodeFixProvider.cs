@@ -57,25 +57,22 @@ namespace MSBuildLocatorAnalyzer
             StatementSyntax statement = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<StatementSyntax>();
             SyntaxNode method;
             for (method = root.FindNode(diagnostic.Location.SourceSpan); !(method is MethodDeclarationSyntax); method = method.Parent);
-            MethodDeclarationSyntax toInsert = SyntaxFactory.MethodDeclaration(attributeLists: SyntaxFactory.List<AttributeListSyntax>(),
-                modifiers: SyntaxFactory.TokenList(SyntaxFactory.Identifier("private")),
-                  returnType: SyntaxFactory.ParseTypeName("void"),
-                  explicitInterfaceSpecifier: null,
-                  identifier: SyntaxFactory.Identifier("UseMSBuild"),
-                  typeParameterList: null,
-                  parameterList: SyntaxFactory.ParameterList(),
-                  constraintClauses: SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(),
-                  body: SyntaxFactory.Block(statement),
-                  semicolonToken: SyntaxFactory.Token(SyntaxKind.SemicolonToken))
-          // Annotate that this node should be formatted
-          .WithAdditionalAnnotations(Formatter.Annotation);
+            SyntaxTokenList modifiers = (method as MethodDeclarationSyntax).Modifiers.Any(mod => mod.ValueText.Equals("static")) ?
+                SyntaxFactory.TokenList(SyntaxFactory.Identifier("private"), SyntaxFactory.Identifier("static")) :
+                SyntaxFactory.TokenList(SyntaxFactory.Identifier("private"));
+            MethodDeclarationSyntax toInsert = SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("void"), "UseMSBuild")
+                .WithModifiers(modifiers)
+                .WithBody(SyntaxFactory.Block(statement))
+                .WithAdditionalAnnotations(Formatter.Annotation);
             var newRoot = root.InsertNodesAfter(method, new List<SyntaxNode>() { toInsert });
+
+            statement = newRoot.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<StatementSyntax>();
             ExpressionStatementSyntax expression = SyntaxFactory.ExpressionStatement(SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(toInsert.Identifier.ValueText))
                 .WithArgumentList(SyntaxFactory.ArgumentList()
                     .WithOpenParenToken(SyntaxFactory.Token(SyntaxKind.OpenParenToken))
                     .WithCloseParenToken(SyntaxFactory.Token(SyntaxKind.CloseParenToken))));
-            var thirdRoot = newRoot.ReplaceNode(statement, expression);
-            return Task.FromResult(document.WithSyntaxRoot(thirdRoot));
+            newRoot = newRoot.ReplaceNode(statement, expression);
+            return Task.FromResult(document.WithSyntaxRoot(newRoot));
         }
     }
 }
