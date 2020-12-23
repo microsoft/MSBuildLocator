@@ -139,7 +139,6 @@ namespace Microsoft.Build.Locator
         /// </param>
         public static void RegisterMSBuildPath(string msbuildPath)
         {
-            registerCalled = true;
             if (string.IsNullOrWhiteSpace(msbuildPath))
             {
                 throw new ArgumentException("Value may not be null or whitespace", nameof(msbuildPath));
