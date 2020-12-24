@@ -2,10 +2,20 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <IsPackable>false</IsPackable>
+    <IsPackable>true</IsPackable>
+	<IncludeBuildOutput>false</IncludeBuildOutput>
+	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 
     <!-- Avoid ID conflicts with the package project. -->
-    <PackageId>*$(MSBuildProjectFullPath)*</PackageId>
+    <PackageId>Microsoft.Build.Locator.Analyzer</PackageId>
+	  <PackageVersion>1.0.0</PackageVersion>
+	  <Authors>Microsoft</Authors>
+	  <RepositoryUrl>https://github.com/microsoft/MSBuildLocator</RepositoryUrl>
+	  <PackageRequiredLicenseAcceptance>false</PackageRequiredLicenseAcceptance>
+	  <Description>Analyzers for MSBuildLocator</Description>
+	  <PackageReleaseNotes>An analyzer that identifies the common problem in MSBuildLocator of registering MSBuild in the same method that uses it.</PackageReleaseNotes>
+	  <Copyright>Copyright</Copyright>
+	  <PackageTags>MSBuildLocator, Build, MSBuild, Analyzers</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

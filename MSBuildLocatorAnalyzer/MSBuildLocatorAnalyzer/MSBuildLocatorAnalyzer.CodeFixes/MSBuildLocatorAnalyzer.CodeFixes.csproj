@@ -2,8 +2,23 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <IsPackable>false</IsPackable>
+    <IsPackable>true</IsPackable>
     <RootNamespace>MSBuildLocatorAnalyzer</RootNamespace>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+  </PropertyGroup>
+	
+  <PropertyGroup>
+    <PackageId>Microsoft.Build.Locator.Analyzer</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>Microsoft</Authors>
+    <RepositoryUrl>https://github.com/microsoft/MSBuildLocator</RepositoryUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <Description>A code fix for the MSBuildLocator analyzer.</Description>
+    <PackageReleaseNotes>Code fix for the analyzer.</PackageReleaseNotes>
+    <Copyright>Copyright</Copyright>
+    <PackageTags>MSBuild, MSBuildLocator, Microsoft Build, code fix, analyzers</PackageTags>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
   </PropertyGroup>
 
   <ItemGroup>
