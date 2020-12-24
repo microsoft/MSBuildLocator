@@ -139,14 +139,40 @@ namespace Microsoft.Build.Locator
         /// </param>
         public static void RegisterMSBuildPath(string msbuildPath)
         {
-            if (string.IsNullOrWhiteSpace(msbuildPath))
+            RegisterMSBuildPath(new string[] {
+                msbuildPath
+#if NET46
+                // Finds and loads NuGet assemblies if msbuildPath is in a VS installation
+                , Path.GetFullPath(Path.Combine(msbuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet"))
+#endif
+            });
+        }
+
+        /// <summary>
+        ///     Add assembly resolution for Microsoft.Build core dlls in the current AppDomain from the specified
+        ///     path.
+        /// </summary>
+        /// <param name="msbuildSearchPaths">
+        ///     Paths to directories containing a deployment of MSBuild binaries.
+        ///     A minimal MSBuild deployment would be the publish result of the Microsoft.Build.Runtime package.
+        ///
+        ///     In order to restore and build real projects, one needs a deployment that contains the rest of the toolchain (nuget, compilers, etc.).
+        ///     Such deployments can be found in installations such as Visual Studio or dotnet CLI.
+        /// </param>
+        public static void RegisterMSBuildPath(string[] msbuildSearchPaths)
+        {
+            if (msbuildSearchPaths.Length < 1)
             {
-                throw new ArgumentException("Value may not be null or whitespace", nameof(msbuildPath));
+                throw new ArgumentException("Must provide at least one search path to RegisterMSBuildPath.");
+            }
+            if (msbuildSearchPaths.Any(string.IsNullOrWhiteSpace))
+            {
+                throw new ArgumentException("Value may not be null or whitespace", nameof(msbuildSearchPaths));
             }
 
-            if (!Directory.Exists(msbuildPath))
+            foreach (string path in msbuildSearchPaths.Where(path => !Directory.Exists(path)))
             {
-                throw new ArgumentException($"Directory \"{msbuildPath}\" does not exist", nameof(msbuildPath));
+                throw new ArgumentException($"Directory \"{path}\" does not exist", nameof(msbuildSearchPaths));
             }
 
             if (!CanRegister)
@@ -202,21 +228,15 @@ namespace Microsoft.Build.Locator
 
                     // Look in the MSBuild folder for any unresolved reference. It may be a dependency
                     // of MSBuild or a task.
-                    string targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
-                    if (File.Exists(targetAssembly))
+                    foreach (string msbuildPath in msbuildSearchPaths)
                     {
-                        assembly = Assembly.LoadFrom(targetAssembly);
-                        loadedAssemblies.Add(assemblyName.FullName, assembly);
-                        return assembly;
-                    }
-
-                    // Finds and loads NuGet assemblies if msbuildPath is in a VS installation
-                    targetAssembly = Path.GetFullPath(Path.Combine(msbuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet", assemblyName.Name + ".dll"));
-                    if (File.Exists(targetAssembly))
-                    {
-                        assembly = Assembly.LoadFrom(targetAssembly);
-                        loadedAssemblies.Add(assemblyName.FullName, assembly);
-                        return assembly;
+                        string targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
+                        if (File.Exists(targetAssembly))
+                        {
+                            assembly = Assembly.LoadFrom(targetAssembly);
+                            loadedAssemblies.Add(assemblyName.FullName, assembly);
+                            return assembly;
+                        }
                     }
 
                     return null;
