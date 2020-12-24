@@ -118,15 +118,15 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AnalyzerDescription" xml:space="preserve">
-    <value>RegisterInstance should not be called in the same method as MSBuild types are used.</value>
+    <value>References to MSBuild types and methods should be in a separate method from the call to MSBuildLocator.RegisterMSBuildPath, MSBuildLocator.RegisterInstance, or MSBuildLocator.RegisterDefaults.</value>
     <comment>An optional longer localizable description of the diagnostic.</comment>
   </data>
   <data name="AnalyzerMessageFormat" xml:space="preserve">
-    <value>Type name '{0}' contains lowercase letters</value>
+    <value>Use of MSBuild type or method is in the same method as call to register MSBuild.</value>
     <comment>The format-able message the diagnostic displays.</comment>
   </data>
   <data name="AnalyzerTitle" xml:space="preserve">
-    <value>Type name contains lowercase letters</value>
+    <value>MSBuild type or method used before being registered.</value>
     <comment>The title of the diagnostic.</comment>
   </data>
 </root>

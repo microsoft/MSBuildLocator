@@ -61,7 +61,7 @@ namespace MSBuildLocatorAnalyzer {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to RegisterInstance should not be called in the same method as MSBuild types are used..
+        ///   Looks up a localized string similar to References to MSBuild types and methods should be in a separate method from the call to MSBuildLocator.RegisterMSBuildPath, MSBuildLocator.RegisterInstance, or MSBuildLocator.RegisterDefaults..
         /// </summary>
         internal static string AnalyzerDescription {
             get {
@@ -70,7 +70,7 @@ namespace MSBuildLocatorAnalyzer {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Type name &apos;{0}&apos; contains lowercase letters.
+        ///   Looks up a localized string similar to Use of MSBuild type or method is in the same method as call to register MSBuild..
         /// </summary>
         internal static string AnalyzerMessageFormat {
             get {
@@ -79,7 +79,7 @@ namespace MSBuildLocatorAnalyzer {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Type name contains lowercase letters.
+        ///   Looks up a localized string similar to MSBuild type or method used before being registered..
         /// </summary>
         internal static string AnalyzerTitle {
             get {

@@ -1,12 +1,12 @@
 ﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Operations;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Threading;
 
 namespace MSBuildLocatorAnalyzer
 {
@@ -22,46 +22,54 @@ namespace MSBuildLocatorAnalyzer
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.AnalyzerDescription), Resources.ResourceManager, typeof(Resources));
         private const string Category = "Naming";
 
-        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, DiagnosticSeverity.Warning, isEnabledByDefault: true, description: Description);
+        private readonly string[] msBuildAssemblies =
+        {
+            "Microsoft.Build",
+            "Microsoft.Build.Engine",
+            "Microsoft.Build.Framework",
+            "Microsoft.Build.Tasks.Core",
+            "Microsoft.Build.Utilities.Core"
+        };
+
+        private readonly string[] msbuildLocatorRegisterMethods =
+        {
+            "RegisterDefaults",
+            "RegisterInstance",
+            "RegisterMSBuildPath"
+        };
+
+        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: Description);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule); } }
 
         public override void Initialize(AnalysisContext context)
         {
-            context.RegisterSyntaxTreeAction(syntaxTreeContext =>
+            context.RegisterOperationAction(opact =>
             {
-                var root = syntaxTreeContext.Tree.GetRoot(syntaxTreeContext.CancellationToken);
-                foreach (var method in root.DescendantNodes().OfType<MethodDeclarationSyntax>())
+                var invocation = (IInvocationOperation)opact.Operation;
+                var targetMethod = invocation.TargetMethod;
+                if (targetMethod?.ContainingAssembly != null)
                 {
-                    if (method != null)
+                    if (targetMethod.ContainingAssembly.Name.Equals("Microsoft.Build.Locator") && msbuildLocatorRegisterMethods.Contains(targetMethod.Name))
                     {
-                        bool msbuildLocatorRegister = false;
-                        Location locOfMSBuildUse = Location.None;
-                        string[] msbuildStatementNames = { "MSBuildLocator.RegisterMSBuildPath", "MSBuildLocator.RegisterInstance", "MSBuildLocator.RegisterDefaults" };
-                        foreach (var statement in method.Body.Statements)
+                        MethodDeclarationSyntax method = (MethodDeclarationSyntax)invocation.Syntax.FirstAncestorOrSelf((Func<SyntaxNode, bool>)(a => a is MethodDeclarationSyntax));
+                        if (method != null)
                         {
-                            if (statement != null)
+                            IOperation symbolParent;
+                            for (symbolParent = invocation; symbolParent.Parent != null && symbolParent.Kind != OperationKind.MethodBody; symbolParent = symbolParent.Parent);
+                            foreach (var child in symbolParent.Descendants())
                             {
-                                foreach (string s in msbuildStatementNames)
+                                if ((child is IInvocationOperation op && msBuildAssemblies.Contains(op.TargetMethod?.ContainingAssembly?.Name)) ||
+                                (child is ITypeOfOperation toOp && msBuildAssemblies.Contains(toOp.TypeOperand.ContainingAssembly?.Name)) ||
+                                (msBuildAssemblies.Contains(child.Type?.ContainingAssembly?.Name)))
                                 {
-                                    if (statement.ToString().Contains(s))
-                                    {
-                                        msbuildLocatorRegister = true;
-                                    }
-                                }
-                                if (statement.ToString().Contains("hi") && locOfMSBuildUse == Location.None)
-                                {
-                                    locOfMSBuildUse = statement.GetFirstToken().GetLocation();
+                                    opact.ReportDiagnostic(Diagnostic.Create(Rule, child.Syntax.GetLocation()));
                                 }
                             }
                         }
-                        if (msbuildLocatorRegister && locOfMSBuildUse != Location.None)
-                        {
-                            syntaxTreeContext.ReportDiagnostic(Diagnostic.Create(Rule, locOfMSBuildUse));
-                        }
                     }
                 }
-            });
+            }, OperationKind.Invocation);
         }
     }
 }

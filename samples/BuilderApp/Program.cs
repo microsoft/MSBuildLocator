@@ -42,8 +42,18 @@ namespace BuilderApp
 
                 MSBuildLocator.RegisterMSBuildPath(msbuildDeploymentToUse.MSBuildPath);
             }
+            var assembly = typeof(Project).Assembly;
+            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
 
-            var result = new Builder().Build(projectFilePath);
+            Console.WriteLine();
+            Console.WriteLine($"BuildApp running using MSBuild version {fvi.FileVersion}");
+            Console.WriteLine(Path.GetDirectoryName(assembly.Location));
+            Console.WriteLine();
+
+            var pre = ProjectRootElement.Open(projectFilePath);
+            var project = new Project(pre);
+            var result = project.Build(new Builder.Logger());
+            //var result = new Builder().Build(projectFilePath);
             Console.WriteLine();
 
             Console.ForegroundColor = result ? ConsoleColor.Green : ConsoleColor.Red;
@@ -154,7 +164,7 @@ namespace BuilderApp
             return project.Build(new Logger());
         }
 
-        private class Logger : ILogger
+        public class Logger : ILogger
         {
             public void Initialize(IEventSource eventSource)
             {
