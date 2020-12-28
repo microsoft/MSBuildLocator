@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26730.10
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30807.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Build.Locator", "src\MSBuildLocator\Microsoft.Build.Locator.csproj", "{2F4700C6-A6F6-49DF-ABF1-6213AAC4BCFD}"
 EndProject
@@ -9,15 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Build.Locator.Tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BuilderApp", "samples\BuilderApp\BuilderApp.csproj", "{70F35A21-43E2-47CB-8B96-B160C6758EAA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSBuildLocatorAnalyzer", "src\MSBuildLocatorAnalyzer\MSBuildLocatorAnalyzer.csproj", "{BFF38CC3-651E-4BCF-BD06-792DE348EA2C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MSBuildLocatorAnalyzer", "src\MSBuildLocatorAnalyzer\MSBuildLocatorAnalyzer.csproj", "{BFF38CC3-651E-4BCF-BD06-792DE348EA2C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSBuildLocatorAnalyzer.CodeFixes", "src\MSBuildLocatorAnalyzer.CodeFixes\MSBuildLocatorAnalyzer.CodeFixes.csproj", "{78A91E45-74F2-438A-8B4B-8DEDE153E1E5}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSBuildLocatorAnalyzer.Package", "src\MSBuildLocatorAnalyzer.Package\MSBuildLocatorAnalyzer.Package.csproj", "{9F8529A4-8BE8-40C7-B359-3F46AB49F642}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSBuildLocatorAnalyzer.Test", "src\MSBuildLocatorAnalyzer.Test\MSBuildLocatorAnalyzer.Test.csproj", "{9FA228FF-0570-4B34-A7E9-D8A4D330B3F5}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSBuildLocatorAnalyzer.Vsix", "src\MSBuildLocatorAnalyzer.Vsix\MSBuildLocatorAnalyzer.Vsix.csproj", "{47BA0F02-B4EE-4A3D-9A5D-747FEEE9F38A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MSBuildLocatorAnalyzer.CodeFixes", "src\MSBuildLocatorAnalyzer.CodeFixes\MSBuildLocatorAnalyzer.CodeFixes.csproj", "{78A91E45-74F2-438A-8B4B-8DEDE153E1E5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{872EA464-8296-4ECA-932F-FC33841252EF}"
 	ProjectSection(SolutionItems) = preProject
@@ -51,18 +45,6 @@ Global
 		{78A91E45-74F2-438A-8B4B-8DEDE153E1E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{78A91E45-74F2-438A-8B4B-8DEDE153E1E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{78A91E45-74F2-438A-8B4B-8DEDE153E1E5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9F8529A4-8BE8-40C7-B359-3F46AB49F642}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9F8529A4-8BE8-40C7-B359-3F46AB49F642}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9F8529A4-8BE8-40C7-B359-3F46AB49F642}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9F8529A4-8BE8-40C7-B359-3F46AB49F642}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9FA228FF-0570-4B34-A7E9-D8A4D330B3F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9FA228FF-0570-4B34-A7E9-D8A4D330B3F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9FA228FF-0570-4B34-A7E9-D8A4D330B3F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9FA228FF-0570-4B34-A7E9-D8A4D330B3F5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{47BA0F02-B4EE-4A3D-9A5D-747FEEE9F38A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{47BA0F02-B4EE-4A3D-9A5D-747FEEE9F38A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{47BA0F02-B4EE-4A3D-9A5D-747FEEE9F38A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{47BA0F02-B4EE-4A3D-9A5D-747FEEE9F38A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

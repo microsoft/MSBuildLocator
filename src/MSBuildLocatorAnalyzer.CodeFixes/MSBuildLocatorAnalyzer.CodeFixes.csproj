@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>net48;netcoreapp3.1</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <RootNamespace>MSBuildLocatorAnalyzer</RootNamespace>
     <IncludeBuildOutput>false</IncludeBuildOutput>
@@ -9,7 +9,7 @@
   </PropertyGroup>
 	
   <PropertyGroup>
-    <PackageId>Microsoft.Build.Locator.Analyzer</PackageId>
+    <PackageId>Microsoft.Build.Locator.Analyzer.CodeFixes</PackageId>
     <PackageVersion>1.0.0</PackageVersion>
     <Authors>Microsoft</Authors>
     <RepositoryUrl>https://github.com/microsoft/MSBuildLocator</RepositoryUrl>
