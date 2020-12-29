@@ -49,13 +49,13 @@ namespace Microsoft.Build.Locator
             {
                 return null;
             }
-            
+
             // Components of the SDK often have dependencies on the runtime they shipped with, including that several tasks that shipped
             // in the .NET 5 SDK rely on the .NET 5.0 runtime. Assuming the runtime that shipped with a particular SDK has the same version,
             // this ensures that we don't choose an SDK that doesn't work with the runtime of the chosen application. This is not guaranteed
             // to always work but should work for now.
-            if (major > Environment.Version.Major ||
-                (major == Environment.Version.Major && minor > Environment.Version.Minor))
+            if (major < Environment.Version.Major ||
+                (major == Environment.Version.Major && minor < Environment.Version.Minor))
             {
                 return null;
             }
@@ -82,42 +82,40 @@ namespace Microsoft.Build.Locator
             const string DOTNET_CLI_UI_LANGUAGE = nameof(DOTNET_CLI_UI_LANGUAGE);
             
             Process process;
+            var lines = new List<string>();
             try
             {
-                var startInfo = new ProcessStartInfo("dotnet", "--info")
+                process = new Process()
                 {
-                    WorkingDirectory = workingDirectory,
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
+                    StartInfo = new ProcessStartInfo("dotnet", "--info")
+                    {
+                        WorkingDirectory = workingDirectory,
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true
+                    }
                 };
 
                 // Ensure that we set the DOTNET_CLI_UI_LANGUAGE environment variable to "en-US" before
                 // running 'dotnet --info'. Otherwise, we may get localized results.
-                startInfo.EnvironmentVariables[DOTNET_CLI_UI_LANGUAGE] = "en-US";
+                process.StartInfo.EnvironmentVariables[DOTNET_CLI_UI_LANGUAGE] = "en-US";
 
-                process = Process.Start(startInfo);
+                process.OutputDataReceived += (_, e) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(e.Data))
+                    {
+                        lines.Add(e.Data);
+                    }
+                };
+
+                process.Start();
             }
             catch
             {
                 // when error running dotnet command, consider dotnet as not available
                 yield break;
             }
-
-            if (process.HasExited)
-            {
-                yield break;
-            }
-
-            var lines = new List<string>();
-            process.OutputDataReceived += (_, e) =>
-            {
-                if (!string.IsNullOrWhiteSpace(e.Data))
-                {
-                    lines.Add(e.Data);
-                }
-            };
 
             process.BeginOutputReadLine();
 
@@ -126,14 +124,16 @@ namespace Microsoft.Build.Locator
             var outputString = string.Join(Environment.NewLine, lines);
 
             var matched = DotNetBasePathRegex.Match(outputString);
-            if (!matched.Success)
+            // We return the version in use at the front of the list in order to ensure
+            // FirstOrDefault always returns the version in use.
+            // The BasePath might not be found if the required version (via global.json)
+            // is not installed. In that case, we can still iterate to the other SDKs installed
+            string basePath = null;
+            if (matched.Success)
             {
-                yield break; 
+                basePath = matched.Groups[1].Value.Trim();
+                yield return basePath; 
             }
-            
-            var basePath = matched.Groups[1].Value.Trim();
-
-            yield return basePath; // We return the version in use at the front of the list in order to ensure FirstOrDefault always returns the version in use.
 
             var lineSdkIndex = lines.FindIndex(line => line.Contains("SDKs installed"));
 
