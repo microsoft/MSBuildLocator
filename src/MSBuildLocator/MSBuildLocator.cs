@@ -141,7 +141,7 @@ namespace Microsoft.Build.Locator
         {
             RegisterMSBuildPath(new string[] {
                 msbuildPath
-#if NET46
+#if NET46 && !MONO
                 // Finds and loads NuGet assemblies if msbuildPath is in a VS installation
                 , Path.GetFullPath(Path.Combine(msbuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet"))
 #endif
@@ -165,14 +165,24 @@ namespace Microsoft.Build.Locator
             {
                 throw new ArgumentException("Must provide at least one search path to RegisterMSBuildPath.");
             }
-            if (msbuildSearchPaths.Any(string.IsNullOrWhiteSpace))
+
+            List<ArgumentException> nullOrWhiteSpaceExceptions = new List<ArgumentException>();
+            for (int i = 0; i < msbuildSearchPaths.Length; i++)
             {
-                throw new ArgumentException("Value may not be null or whitespace", nameof(msbuildSearchPaths));
+                if (string.IsNullOrWhiteSpace(msbuildSearchPaths[i]))
+                {
+                    nullOrWhiteSpaceExceptions.Add(new ArgumentException($"Value at position {i+1} may not be null or whitespace", nameof(msbuildSearchPaths)));
+                }
+            }
+            if (nullOrWhiteSpaceExceptions.Count > 0)
+            {
+                throw new AggregateException("Search paths for MSBuild assemblies cannot be null and must contain non-whitespace characters.", nullOrWhiteSpaceExceptions);
             }
 
-            foreach (string path in msbuildSearchPaths.Where(path => !Directory.Exists(path)))
+            IEnumerable<string> paths = msbuildSearchPaths.Where(path => !Directory.Exists(path));
+            if (paths.FirstOrDefault() == null)
             {
-                throw new ArgumentException($"Directory \"{path}\" does not exist", nameof(msbuildSearchPaths));
+                throw new AggregateException($"A directory or directories in \"{nameof(msbuildSearchPaths)}\" do not exist", paths.Select(path => new ArgumentException($"Directory \"{path}\" does not exist", nameof(msbuildSearchPaths))));
             }
 
             if (!CanRegister)
