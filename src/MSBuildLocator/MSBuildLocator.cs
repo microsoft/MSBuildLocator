@@ -141,7 +141,7 @@ namespace Microsoft.Build.Locator
         {
             RegisterMSBuildPath(new string[] {
                 msbuildPath
-#if NET46 && !MONO
+#if NET46
                 // Finds and loads NuGet assemblies if msbuildPath is in a VS installation
                 , Path.GetFullPath(Path.Combine(msbuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet"))
 #endif
