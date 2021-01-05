@@ -15,10 +15,10 @@ namespace Microsoft.Build.Locator
         internal static IEnumerable<VisualStudioInstance> GetMonoMSBuildInstances()
         {
             // $prefix/lib/mono/4.5/mscorlib.dll
-            var runningMonoPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof (object).Assembly.Location), "..", "..", ".."));
-            if (TryGetValidMonoVersion (runningMonoPath, out var version))
+            var runningMonoFullPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof (object).Assembly.Location), "..", "..", ".."));
+            if (TryGetValidMonoVersion (runningMonoFullPath, out var version))
             {
-                yield return new VisualStudioInstance("Mono", runningMonoPath, version, DiscoveryType.Mono);
+                yield return new VisualStudioInstance("Mono", runningMonoFullPath, version, DiscoveryType.Mono);
             }
 
             if (!IsOSX)
@@ -30,7 +30,7 @@ namespace Microsoft.Build.Locator
             foreach(var dirPath in Directory.EnumerateDirectories(s_monoOSXBasePath))
             {
                 if (string.Equals(Path.GetFileName(dirPath), "Current") || // skip the `Current` symlink
-                    string.Equals(dirPath, runningMonoPath))               // and the running mono version
+                    string.Equals(Path.GetFullPath(dirPath), runningMonoFullPath)) // and the running mono version
                 {
                     continue;
                 }
