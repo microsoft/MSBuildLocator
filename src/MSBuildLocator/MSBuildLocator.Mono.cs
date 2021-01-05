@@ -16,7 +16,7 @@ namespace Microsoft.Build.Locator
         {
             // $prefix/lib/mono/4.5/mscorlib.dll
             var runningMonoFullPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof (object).Assembly.Location), "..", "..", ".."));
-            if (TryGetValidMonoVersion (runningMonoFullPath, out var version))
+            if (TryGetValidMonoVersion(runningMonoFullPath, out var version))
             {
                 yield return new VisualStudioInstance("Mono", runningMonoFullPath, version, DiscoveryType.Mono);
             }
@@ -66,24 +66,30 @@ namespace Microsoft.Build.Locator
                 ver = null;
                 try
                 {
-                    var p = new Process();
-                    p.StartInfo.FileName = Path.Combine(monoPrefixPath, "bin", "mono");
-                    p.StartInfo.Arguments = "--version=number";
-                    p.StartInfo.UseShellExecute = false;
-                    p.StartInfo.RedirectStandardOutput = true;
-                    p.StartInfo.RedirectStandardError = true;
+                    using (var p = new Process())
+                    {
+                        p.StartInfo = new ProcessStartInfo
+                        {
+                            FileName = Path.Combine(monoPrefixPath, "bin", "mono"),
+                            Arguments = "--version=number",
+                            UseShellExecute = false,
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true
+                        };
 
-                    // Don't pollute caller's console
-                    p.OutputDataReceived += (s, e) => {};
-                    p.ErrorDataReceived += (s, e) => {};
+                        // Don't pollute caller's console
+                        p.OutputDataReceived += (s, e) => {};
+                        p.ErrorDataReceived += (s, e) => {};
 
-                    p.Start();
-                    p.WaitForExit();
+                        p.Start();
+                        p.WaitForExit();
 
-                    var stdout_str = p.StandardOutput.ReadToEnd();
-                    return Version.TryParse(stdout_str, out ver);
-                } catch (Win32Exception) {
+                        var stdout_str = p.StandardOutput.ReadToEnd();
+                        return Version.TryParse(stdout_str, out ver);
+                    }
                 }
+                catch (Win32Exception)
+                { }
 
                 return false;
             }
