@@ -15,11 +15,10 @@ namespace Microsoft.Build.Locator
     {
         private static readonly Regex DotNetBasePathRegex = new Regex("Base Path:(.*)$", RegexOptions.Multiline);
         private static readonly Regex VersionRegex = new Regex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline);
+        private static readonly Regex SdkRegex = new Regex(@"(\S+) \[(.*?)]$", RegexOptions.Multiline);
 
-        public static VisualStudioInstance GetInstance(string workingDirectory)
-        {
-            string dotNetSdkPath = GetDotNetBasePath(workingDirectory);
-
+        public static VisualStudioInstance GetInstance(string dotNetSdkPath)
+        {            
             if (string.IsNullOrWhiteSpace(dotNetSdkPath))
             {
                 return null;
@@ -36,8 +35,8 @@ namespace Microsoft.Build.Locator
                 return null;
             }
 
-            string versionContent = File.ReadAllText(versionPath);
-            Match versionMatch = VersionRegex.Match(versionContent);
+            // Preview versions contain a hyphen after the numeric part of the version. Version.TryParse doesn't accept that.
+            Match versionMatch = VersionRegex.Match(File.ReadAllText(versionPath));
 
             if (!versionMatch.Success)
             {
@@ -50,6 +49,16 @@ namespace Microsoft.Build.Locator
             {
                 return null;
             }
+            
+            // Components of the SDK often have dependencies on the runtime they shipped with, including that several tasks that shipped
+            // in the .NET 5 SDK rely on the .NET 5.0 runtime. Assuming the runtime that shipped with a particular SDK has the same version,
+            // this ensures that we don't choose an SDK that doesn't work with the runtime of the chosen application. This is not guaranteed
+            // to always work but should work for now.
+            if (major > Environment.Version.Major ||
+                (major == Environment.Version.Major && minor > Environment.Version.Minor))
+            {
+                return null;
+            }
 
             return new VisualStudioInstance(
                 name: ".NET Core SDK",
@@ -58,10 +67,20 @@ namespace Microsoft.Build.Locator
                 discoveryType: DiscoveryType.DotNetSdk);
         }
 
-        private static string GetDotNetBasePath(string workingDirectory)
+        public static IEnumerable<VisualStudioInstance> GetInstances(string workingDirectory)
+        {            
+            foreach (var basePath in GetDotNetBasePaths(workingDirectory))
+            {
+                var dotnetSdk = GetInstance(basePath);
+                if (dotnetSdk != null)
+                    yield return dotnetSdk;
+            }
+        }
+
+        private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory)
         {
             const string DOTNET_CLI_UI_LANGUAGE = nameof(DOTNET_CLI_UI_LANGUAGE);
-
+            
             Process process;
             try
             {
@@ -83,12 +102,12 @@ namespace Microsoft.Build.Locator
             catch
             {
                 // when error running dotnet command, consider dotnet as not available
-                return null;
+                yield break;
             }
 
             if (process.HasExited)
             {
-                return null;
+                yield break;
             }
 
             var lines = new List<string>();
@@ -109,10 +128,47 @@ namespace Microsoft.Build.Locator
             var matched = DotNetBasePathRegex.Match(outputString);
             if (!matched.Success)
             {
-                return null;
+                yield break; 
+            }
+            
+            var basePath = matched.Groups[1].Value.Trim();
+
+            yield return basePath; // We return the version in use at the front of the list in order to ensure FirstOrDefault always returns the version in use.
+
+            var lineSdkIndex = lines.FindIndex(line => line.Contains("SDKs installed"));
+
+            List<string> paths = new List<string>();
+            if (lineSdkIndex != -1)
+            {
+                lineSdkIndex++;
+
+                while (lineSdkIndex < lines.Count && !string.IsNullOrEmpty(lines[lineSdkIndex]))
+                {
+                    var sdkMatch = SdkRegex.Match(lines[lineSdkIndex]);
+
+                    if (!sdkMatch.Success)
+                        break;
+
+                    var version = sdkMatch.Groups[1].Value.Trim();
+                    var path = sdkMatch.Groups[2].Value.Trim();
+                    
+                    path = Path.Combine(path, version) + Path.DirectorySeparatorChar;
+
+                    if (!path.Equals(basePath))
+                        paths.Add(path); 
+                                    
+                    lineSdkIndex++;
+                }
             }
 
-            return matched.Groups[1].Value.Trim();
+            // The paths are sorted in increasing order. We want to return the newest SDKs first, however,
+            // so iterate over the list in reverse order. If basePath is disqualified because it was later
+            // than the runtime version, this ensures that RegisterDefaults will return the latest valid
+            // SDK instead of the earliest installed.
+            for (int i = paths.Count - 1; i >= 0; i--)
+            {
+                yield return paths[i];
+            }
         }
     }
 }

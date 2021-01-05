@@ -24,4 +24,8 @@
     <ProjectReference Include="..\..\src\MSBuildLocator\Microsoft.Build.Locator.csproj" />
   </ItemGroup>
 
+  <!-- Explicitly import the file that gives auto binding redirects for package users.
+       Not necessary if you use the package! -->
+  <Import Project="..\..\src\MSBuildLocator\build\Microsoft.Build.Locator.props"/>
+
 </Project>
