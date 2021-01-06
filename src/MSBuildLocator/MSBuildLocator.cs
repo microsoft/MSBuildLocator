@@ -139,13 +139,20 @@ namespace Microsoft.Build.Locator
         /// </param>
         public static void RegisterMSBuildPath(string msbuildPath)
         {
-            RegisterMSBuildPath(new string[] {
+            var searchPaths = new List<string>
+            {
                 msbuildPath
+            };
+
 #if NET46
+            if (!IsRunningOnMono)
+            {
                 // Finds and loads NuGet assemblies if msbuildPath is in a VS installation
-                , Path.GetFullPath(Path.Combine(msbuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet"))
+                searchPaths.Add(Path.GetFullPath(Path.Combine(msbuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet")));
+            }
 #endif
-            });
+
+            RegisterMSBuildPath(searchPaths.ToArray());
         }
 
         /// <summary>
