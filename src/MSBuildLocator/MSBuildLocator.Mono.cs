@@ -40,7 +40,7 @@ namespace Microsoft.Build.Locator
 
                 if (TryGetValidMonoVersion(dirPath, out version))
                 {
-                    yield return new VisualStudioInstance("Mono", dirPath, version, DiscoveryType.Mono);
+                    yield return new VisualStudioInstance("Mono", dirPath + '/', version, DiscoveryType.Mono);
                 }
             }
 
