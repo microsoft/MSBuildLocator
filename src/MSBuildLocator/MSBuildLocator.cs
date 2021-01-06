@@ -179,10 +179,10 @@ namespace Microsoft.Build.Locator
                 throw new AggregateException("Search paths for MSBuild assemblies cannot be null and must contain non-whitespace characters.", nullOrWhiteSpaceExceptions);
             }
 
-            IEnumerable<string> paths = msbuildSearchPaths.Where(path => !Directory.Exists(path));
-            if (paths.FirstOrDefault() == null)
+            IEnumerable<string> nonExistantPaths = msbuildSearchPaths.Where(path => !Directory.Exists(path));
+            if (nonExistantPaths.Any())
             {
-                throw new AggregateException($"A directory or directories in \"{nameof(msbuildSearchPaths)}\" do not exist", paths.Select(path => new ArgumentException($"Directory \"{path}\" does not exist", nameof(msbuildSearchPaths))));
+                throw new AggregateException($"A directory or directories in \"{nameof(msbuildSearchPaths)}\" do not exist", nonExistantPaths.Select(path => new ArgumentException($"Directory \"{path}\" does not exist", nameof(msbuildSearchPaths))));
             }
 
             if (!CanRegister)
