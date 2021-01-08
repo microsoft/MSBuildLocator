@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
     <PackageReference Include="MicroBuild.Core" Version="0.3.0" PrivateAssets="all" />
     <Content Include="build\Microsoft.Build.Locator.props">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>

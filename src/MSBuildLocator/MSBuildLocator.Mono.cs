@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Build.Locator
 {
@@ -24,16 +25,17 @@ namespace Microsoft.Build.Locator
                 yield return new VisualStudioInstance("Mono", runningMonoFullPath, version, DiscoveryType.Mono);
             }
 
-            if (!IsOSX)
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                // Returning just one instance on !osx
+                // Returning just one instance on !osx, because we cannot determine
+                // where other mono installations might be
                 yield break;
             }
 
             foreach(var dirPath in Directory.EnumerateDirectories(s_monoOSXBasePath))
             {
                 if (string.Equals(Path.GetFileName(dirPath), "Current") || // skip the `Current` symlink
-                    string.Equals(Path.GetFullPath(dirPath), runningMonoFullPath)) // and the running mono version
+                    string.Equals(Path.GetFullPath(dirPath), runningMonoFullPath)) // and the running mono version returned above
                 {
                     continue;
                 }
@@ -122,25 +124,6 @@ namespace Microsoft.Build.Locator
                 }
 
                 return _isRunningOnMono.Value;
-            }
-        }
-
-        // Taken from MSBuild/NativeMethodsShared
-        private static bool? _isOSX;
-
-        /// <summary>
-        /// Gets a flag indicating if we are running under Mac OSX
-        /// </summary>
-        internal static bool IsOSX
-        {
-            get
-            {
-                if (!_isOSX.HasValue)
-                {
-                    _isOSX = File.Exists("/usr/lib/libc.dylib");
-                }
-
-                return _isOSX.Value;
             }
         }
     }
