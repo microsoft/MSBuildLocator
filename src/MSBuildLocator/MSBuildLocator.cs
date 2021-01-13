@@ -123,7 +123,19 @@ namespace Microsoft.Build.Locator
                 ApplyDotNetSdkEnvironmentVariables(instance.MSBuildPath);
             }
 
-            RegisterMSBuildPath(instance.MSBuildPath);
+            if (instance.DiscoveryType == DiscoveryType.VisualStudioSetup || instance.DiscoveryType == DiscoveryType.DeveloperConsole)
+            {
+                RegisterMSBuildPath(new string[]
+                {
+                    instance.MSBuildPath,
+                    // Find and load NuGet assemblies if msbuildPath is in a VS installation
+                    Path.GetFullPath(Path.Combine(instance.MSBuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet"))
+                });
+            }
+            else
+            {
+                RegisterMSBuildPath(instance.MSBuildPath);
+            }
         }
 
         /// <summary>
@@ -139,13 +151,7 @@ namespace Microsoft.Build.Locator
         /// </param>
         public static void RegisterMSBuildPath(string msbuildPath)
         {
-            RegisterMSBuildPath(new string[] {
-                msbuildPath
-#if NET46
-                // Finds and loads NuGet assemblies if msbuildPath is in a VS installation
-                , Path.GetFullPath(Path.Combine(msbuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet"))
-#endif
-            });
+            RegisterMSBuildPath(new string[] { msbuildPath });
         }
 
         /// <summary>
@@ -180,7 +186,7 @@ namespace Microsoft.Build.Locator
             }
 
             IEnumerable<string> paths = msbuildSearchPaths.Where(path => !Directory.Exists(path));
-            if (paths.FirstOrDefault() == null)
+            if (paths.Any())
             {
                 throw new AggregateException($"A directory or directories in \"{nameof(msbuildSearchPaths)}\" do not exist", paths.Select(path => new ArgumentException($"Directory \"{path}\" does not exist", nameof(msbuildSearchPaths))));
             }
