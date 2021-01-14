@@ -124,7 +124,7 @@ namespace Microsoft.Build.Locator
             }
 
             // Find and load NuGet assemblies if msbuildPath is in a VS installation
-            string nugetPath = Path.GetFullPath(Path.Combine(instance.MSBuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet"))
+            string nugetPath = Path.GetFullPath(Path.Combine(instance.MSBuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet"));
             if (Directory.Exists(nugetPath))
             {
                 RegisterMSBuildPath(new string[] { instance.MSBuildPath, nugetPath });
