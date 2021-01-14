@@ -117,11 +117,6 @@ namespace Microsoft.Build.Locator
                 yield break;
             }
 
-            if (process.HasExited)
-            {
-                yield break;
-            }
-
             process.BeginOutputReadLine();
 
             process.WaitForExit();
