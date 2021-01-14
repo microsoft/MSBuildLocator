@@ -124,14 +124,12 @@ namespace Microsoft.Build.Locator
             var outputString = string.Join(Environment.NewLine, lines);
 
             var matched = DotNetBasePathRegex.Match(outputString);
-            if (!matched.Success)
+            string basePath = null;
+            if (matched.Success)
             {
-                yield break; 
+                basePath = matched.Groups[1].Value.Trim();
+                yield return basePath;
             }
-            
-            var basePath = matched.Groups[1].Value.Trim();
-
-            yield return basePath; // We return the version in use at the front of the list in order to ensure FirstOrDefault always returns the version in use.
 
             var lineSdkIndex = lines.FindIndex(line => line.Contains("SDKs installed"));
 
