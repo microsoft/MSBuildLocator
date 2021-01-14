@@ -123,14 +123,11 @@ namespace Microsoft.Build.Locator
                 ApplyDotNetSdkEnvironmentVariables(instance.MSBuildPath);
             }
 
-            if (instance.DiscoveryType == DiscoveryType.VisualStudioSetup || instance.DiscoveryType == DiscoveryType.DeveloperConsole)
+            // Find and load NuGet assemblies if msbuildPath is in a VS installation
+            string nugetPath = Path.GetFullPath(Path.Combine(instance.MSBuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet"))
+            if (Directory.Exists(nugetPath))
             {
-                RegisterMSBuildPath(new string[]
-                {
-                    instance.MSBuildPath,
-                    // Find and load NuGet assemblies if msbuildPath is in a VS installation
-                    Path.GetFullPath(Path.Combine(instance.MSBuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet"))
-                });
+                RegisterMSBuildPath(new string[] { instance.MSBuildPath, nugetPath });
             }
             else
             {
