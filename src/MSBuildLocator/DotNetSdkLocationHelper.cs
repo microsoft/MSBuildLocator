@@ -82,22 +82,34 @@ namespace Microsoft.Build.Locator
             const string DOTNET_CLI_UI_LANGUAGE = nameof(DOTNET_CLI_UI_LANGUAGE);
             
             Process process;
+            var lines = new List<string>();
             try
             {
-                var startInfo = new ProcessStartInfo("dotnet", "--info")
-                {
-                    WorkingDirectory = workingDirectory,
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
+                process = new Process()
+                { 
+                    StartInfo = new ProcessStartInfo("dotnet", "--info")
+                    {
+                        WorkingDirectory = workingDirectory,
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true
+                    }
                 };
 
                 // Ensure that we set the DOTNET_CLI_UI_LANGUAGE environment variable to "en-US" before
                 // running 'dotnet --info'. Otherwise, we may get localized results.
-                startInfo.EnvironmentVariables[DOTNET_CLI_UI_LANGUAGE] = "en-US";
+                process.StartInfo.EnvironmentVariables[DOTNET_CLI_UI_LANGUAGE] = "en-US";
 
-                process = Process.Start(startInfo);
+                process.OutputDataReceived += (_, e) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(e.Data))
+                    {
+                        lines.Add(e.Data);
+                    }
+                };
+
+                process.Start();
             }
             catch
             {
@@ -109,15 +121,6 @@ namespace Microsoft.Build.Locator
             {
                 yield break;
             }
-
-            var lines = new List<string>();
-            process.OutputDataReceived += (_, e) =>
-            {
-                if (!string.IsNullOrWhiteSpace(e.Data))
-                {
-                    lines.Add(e.Data);
-                }
-            };
 
             process.BeginOutputReadLine();
 
