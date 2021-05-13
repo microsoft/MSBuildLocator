@@ -92,8 +92,7 @@ namespace Microsoft.Build.Locator
                         WorkingDirectory = workingDirectory,
                         CreateNoWindow = true,
                         UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
+                        RedirectStandardOutput = true
                     }
                 };
 
