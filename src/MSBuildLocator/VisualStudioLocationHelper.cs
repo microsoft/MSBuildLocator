@@ -2,8 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Taken from https://github.com/Microsoft/msbuild/blob/6851538897f5d7b08024a6d8435bc44be5869e53/src/Shared/VisualStudioLocationHelper.cs
 
-#if FEATURE_VISUALSTUDIOSETUP
-
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -112,4 +110,3 @@ namespace Microsoft.Build.Locator
             IntPtr reserved);
     }
 }
-#endif

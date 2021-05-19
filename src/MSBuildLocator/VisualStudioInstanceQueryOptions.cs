@@ -16,10 +16,9 @@ namespace Microsoft.Build.Locator
         public static VisualStudioInstanceQueryOptions Default => new VisualStudioInstanceQueryOptions
         {
             DiscoveryTypes =
-#if FEATURE_VISUALSTUDIOSETUP
+#if NETFRAMEWORK
                 DiscoveryType.DeveloperConsole | DiscoveryType.VisualStudioSetup
-#endif
-#if NETCOREAPP
+#else
                 DiscoveryType.DotNetSdk
 #endif
         };

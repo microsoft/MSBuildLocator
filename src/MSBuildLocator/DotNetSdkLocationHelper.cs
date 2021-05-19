@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if NETCOREAPP
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,7 +16,7 @@ namespace Microsoft.Build.Locator
         private static readonly Regex SdkRegex = new Regex(@"(\S+) \[(.*?)]$", RegexOptions.Multiline);
 
         public static VisualStudioInstance GetInstance(string dotNetSdkPath)
-        {            
+        {
             if (string.IsNullOrWhiteSpace(dotNetSdkPath))
             {
                 return null;
@@ -49,7 +47,7 @@ namespace Microsoft.Build.Locator
             {
                 return null;
             }
-            
+
             // Components of the SDK often have dependencies on the runtime they shipped with, including that several tasks that shipped
             // in the .NET 5 SDK rely on the .NET 5.0 runtime. Assuming the runtime that shipped with a particular SDK has the same version,
             // this ensures that we don't choose an SDK that doesn't work with the runtime of the chosen application. This is not guaranteed
@@ -68,7 +66,7 @@ namespace Microsoft.Build.Locator
         }
 
         public static IEnumerable<VisualStudioInstance> GetInstances(string workingDirectory)
-        {            
+        {
             foreach (var basePath in GetDotNetBasePaths(workingDirectory))
             {
                 var dotnetSdk = GetInstance(basePath);
@@ -80,13 +78,13 @@ namespace Microsoft.Build.Locator
         private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory)
         {
             const string DOTNET_CLI_UI_LANGUAGE = nameof(DOTNET_CLI_UI_LANGUAGE);
-            
+
             Process process;
             var lines = new List<string>();
             try
             {
                 process = new Process()
-                { 
+                {
                     StartInfo = new ProcessStartInfo("dotnet", "--info")
                     {
                         WorkingDirectory = workingDirectory,
@@ -147,12 +145,12 @@ namespace Microsoft.Build.Locator
 
                     var version = sdkMatch.Groups[1].Value.Trim();
                     var path = sdkMatch.Groups[2].Value.Trim();
-                    
+
                     path = Path.Combine(path, version) + Path.DirectorySeparatorChar;
 
                     if (!path.Equals(basePath))
-                        paths.Add(path); 
-                                    
+                        paths.Add(path);
+
                     lineSdkIndex++;
                 }
             }
@@ -168,4 +166,3 @@ namespace Microsoft.Build.Locator
         }
     }
 }
-#endif
