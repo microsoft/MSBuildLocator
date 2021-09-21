@@ -3,11 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 
 #if NETCOREAPP
 using System.Runtime.Loader;
@@ -216,17 +216,15 @@ namespace Microsoft.Build.Locator
                 string msbuildExe = Path.Combine(path, "MSBuild.exe");
                 if (File.Exists(msbuildExe))
                 {
-                    Environment.SetEnvironmentVariable("MSBUILD_EXE_PATH", msbuildExe);
-                    break;
-                }
-                else
-                {
-                    string msbuildDll = Path.Combine(path, "MSBuild.dll");
-                    if (File.Exists(msbuildDll))
+                    if (FileVersionInfo.GetVersionInfo(msbuildExe).FileMajorPart < 17)
                     {
-                        Environment.SetEnvironmentVariable("MSBUILD_EXE_PATH", msbuildDll);
-                        break;
+                        if (Path.GetDirectoryName(msbuildExe).EndsWith(@"\amd64", StringComparison.OrdinalIgnoreCase))
+                        {
+                            msbuildExe = Path.Combine(path.Substring(0, path.Length - 6), "MSBuild.exe");
+                        }
+                        Environment.SetEnvironmentVariable("MSBUILD_EXE_PATH", msbuildExe);
                     }
+                    break;
                 }
             }
 
