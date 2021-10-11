@@ -209,6 +209,7 @@ namespace Microsoft.Build.Locator
             // AssemblyResolve event can fire multiple times for the same assembly, so keep track of what's already been loaded.
             var loadedAssemblies = new Dictionary<string, Assembly>();
 
+#if NET46
             // MSBuild can be loaded from the x86 or x64 folder. Before 17.0, it looked next to the executing assembly in some cases and constructed a path that assumed x86 in others.
             // This overrides the latter assumption to let it find the right MSBuild.
             foreach (string path in msbuildSearchPaths)
@@ -227,6 +228,7 @@ namespace Microsoft.Build.Locator
                     break;
                 }
             }
+#endif
 
             // Saving the handler in a static field so it can be unregistered later.
 #if NET46
