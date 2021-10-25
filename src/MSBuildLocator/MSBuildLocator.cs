@@ -3,11 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 
 #if NETCOREAPP
 using System.Runtime.Loader;
@@ -208,6 +208,27 @@ namespace Microsoft.Build.Locator
 
             // AssemblyResolve event can fire multiple times for the same assembly, so keep track of what's already been loaded.
             var loadedAssemblies = new Dictionary<string, Assembly>();
+
+#if NET46
+            // MSBuild can be loaded from the x86 or x64 folder. Before 17.0, it looked next to the executing assembly in some cases and constructed a path that assumed x86 in others.
+            // This overrides the latter assumption to let it find the right MSBuild.
+            foreach (string path in msbuildSearchPaths)
+            {
+                string msbuildExe = Path.Combine(path, "MSBuild.exe");
+                if (File.Exists(msbuildExe))
+                {
+                    if (FileVersionInfo.GetVersionInfo(msbuildExe).FileMajorPart < 17)
+                    {
+                        if (Path.GetDirectoryName(msbuildExe).EndsWith(@"\amd64", StringComparison.OrdinalIgnoreCase))
+                        {
+                            msbuildExe = Path.Combine(path.Substring(0, path.Length - 6), "MSBuild.exe");
+                        }
+                        Environment.SetEnvironmentVariable("MSBUILD_EXE_PATH", msbuildExe);
+                    }
+                    break;
+                }
+            }
+#endif
 
             // Saving the handler in a static field so it can be unregistered later.
 #if NET46
