@@ -217,7 +217,8 @@ namespace Microsoft.Build.Locator
                 string msbuildExe = Path.Combine(path, "MSBuild.exe");
                 if (File.Exists(msbuildExe))
                 {
-                    if (FileVersionInfo.GetVersionInfo(msbuildExe).FileMajorPart < 17)
+                    FileVersionInfo ver = FileVersionInfo.GetVersionInfo(msbuildExe);
+                    if (ver.FileMajorPart < 17 || ver.FileMinorPart < 1)
                     {
                         if (Path.GetDirectoryName(msbuildExe).EndsWith(@"\amd64", StringComparison.OrdinalIgnoreCase))
                         {
