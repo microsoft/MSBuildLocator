@@ -218,7 +218,7 @@ namespace Microsoft.Build.Locator
                 if (File.Exists(msbuildExe))
                 {
                     FileVersionInfo ver = FileVersionInfo.GetVersionInfo(msbuildExe);
-                    if (ver.FileMajorPart < 17 || ver.FileMinorPart < 1)
+                    if (ver.FileMajorPart < 17 || (ver.FileMajorPart == 17 && ver.FileMinorPart < 1))
                     {
                         if (Path.GetDirectoryName(msbuildExe).EndsWith(@"\amd64", StringComparison.OrdinalIgnoreCase))
                         {
