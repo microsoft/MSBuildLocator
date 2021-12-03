@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net471;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>net472;netcoreapp2.1;net5.0</TargetFrameworks>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -23,5 +23,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\MSBuildLocator\Microsoft.Build.Locator.csproj" />
   </ItemGroup>
+
+  <!-- Explicitly import the file that gives auto binding redirects for package users.
+       Not necessary if you use the package! -->
+  <Import Project="..\..\src\MSBuildLocator\build\Microsoft.Build.Locator.props"/>
 
 </Project>

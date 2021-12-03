@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>net46;netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>net46;netcoreapp2.1</TargetFrameworks>
     <DebugType>full</DebugType>
 
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
@@ -13,7 +13,7 @@
     <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
 
     <Title>MSBuild Locator</Title>
-    <Description>Package that assists in locating and using an installed version of MSBuild 15.</Description>
+    <Description>Package that assists in locating and using a copy of MSBuild installed as part of Visual Studio 2017 or higher or .NET Core SDK 2.1 or higher.</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='net46'">

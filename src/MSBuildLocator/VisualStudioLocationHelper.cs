@@ -43,8 +43,8 @@ namespace Microsoft.Build.Locator
                     e.Next(1, instances, out fetched);
                     if (fetched <= 0) continue;
 
-                    var instance = instances[0];
-                    var state = ((ISetupInstance2) instance).GetState();
+                    var instance = (ISetupInstance2) instances[0];
+                    InstanceState state = instance.GetState();
 
                     if (!Version.TryParse(instance.GetInstallationVersion(), out Version version))
                         continue;
@@ -52,12 +52,27 @@ namespace Microsoft.Build.Locator
                     // If the install was complete and a valid version, consider it.
                     if (state == InstanceState.Complete ||
                         (state.HasFlag(InstanceState.Registered) && state.HasFlag(InstanceState.NoRebootRequired)))
-                        validInstances.Add(new VisualStudioInstance(
-                            instance.GetDisplayName(),
-                            instance.GetInstallationPath(),
-                            version,
-                            DiscoveryType.VisualStudioSetup));
-                    ;
+                    {
+                        bool instanceHasMSBuild = false;
+
+                        foreach (ISetupPackageReference package in instance.GetPackages())
+                        {
+                            if (string.Equals(package.GetId(), "Microsoft.Component.MSBuild", StringComparison.OrdinalIgnoreCase))
+                            {
+                                instanceHasMSBuild = true;
+                                break;
+                            }
+                        }
+
+                        if (instanceHasMSBuild)
+                        {
+                            validInstances.Add(new VisualStudioInstance(
+                                instance.GetDisplayName(),
+                                instance.GetInstallationPath(),
+                                version,
+                                DiscoveryType.VisualStudioSetup));
+                        }
+                    }
                 } while (fetched > 0);
             }
             catch (COMException)
