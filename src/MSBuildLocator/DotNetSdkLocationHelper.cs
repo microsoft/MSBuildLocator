@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 namespace Microsoft.Build.Locator
@@ -77,90 +78,76 @@ namespace Microsoft.Build.Locator
             }
         }
 
+        enum hostfxr_resolve_sdk2_flags_t
+        {
+            disallow_prerelease = 0x1,
+        };
+
+        enum hostfxr_resolve_sdk2_result_key_t
+        {
+            resolved_sdk_dir = 0,
+            global_json_path = 1,
+        };
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
+        private delegate void hostfxr_resolve_sdk2_result_fn(
+                hostfxr_resolve_sdk2_result_key_t key,
+                string value);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
+        private delegate void hostfxr_get_available_sdks_result_fn(
+                hostfxr_resolve_sdk2_result_key_t key,
+                [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)]
+                string[] value);
+
+        [DllImport("hostfxr", CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int hostfxr_resolve_sdk2(
+            string exe_dir,
+            string working_dir,
+            hostfxr_resolve_sdk2_flags_t flags,
+            hostfxr_resolve_sdk2_result_fn result);
+
+        [DllImport("hostfxr", CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int hostfxr_get_available_sdks(string exe_dir, hostfxr_get_available_sdks_result_fn result);
+
         private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory)
         {
-            const string DOTNET_CLI_UI_LANGUAGE = nameof(DOTNET_CLI_UI_LANGUAGE);
-            
-            Process process;
-            var lines = new List<string>();
-            try
+            string dotnetPath = null;
+            foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(';'))
             {
-                process = new Process()
-                { 
-                    StartInfo = new ProcessStartInfo("dotnet", "--info")
-                    {
-                        WorkingDirectory = workingDirectory,
-                        CreateNoWindow = true,
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true
-                    }
-                };
-
-                // Ensure that we set the DOTNET_CLI_UI_LANGUAGE environment variable to "en-US" before
-                // running 'dotnet --info'. Otherwise, we may get localized results.
-                process.StartInfo.EnvironmentVariables[DOTNET_CLI_UI_LANGUAGE] = "en-US";
-
-                process.OutputDataReceived += (_, e) =>
+                if (File.Exists(Path.Combine(dir, "dotnet.exe")))
                 {
-                    if (!string.IsNullOrWhiteSpace(e.Data))
-                    {
-                        lines.Add(e.Data);
-                    }
-                };
-
-                process.Start();
-            }
-            catch
-            {
-                // when error running dotnet command, consider dotnet as not available
-                yield break;
-            }
-
-            process.BeginOutputReadLine();
-
-            process.WaitForExit();
-
-            var outputString = string.Join(Environment.NewLine, lines);
-
-            var matched = DotNetBasePathRegex.Match(outputString);
-            string basePath = null;
-            if (matched.Success)
-            {
-                basePath = matched.Groups[1].Value.Trim();
-                yield return basePath;
-            }
-
-            var lineSdkIndex = lines.FindIndex(line => line.Contains("SDKs installed"));
-
-            List<string> paths = new List<string>();
-            if (lineSdkIndex != -1)
-            {
-                lineSdkIndex++;
-
-                while (lineSdkIndex < lines.Count && !string.IsNullOrEmpty(lines[lineSdkIndex]))
-                {
-                    var sdkMatch = SdkRegex.Match(lines[lineSdkIndex]);
-
-                    if (!sdkMatch.Success)
-                        break;
-
-                    var version = sdkMatch.Groups[1].Value.Trim();
-                    var path = sdkMatch.Groups[2].Value.Trim();
-                    
-                    path = Path.Combine(path, version) + Path.DirectorySeparatorChar;
-
-                    if (!path.Equals(basePath))
-                        paths.Add(path); 
-                                    
-                    lineSdkIndex++;
+                    dotnetPath = dir;
                 }
+            }
+
+            string bestSDK = null;
+            int rc = hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, result: (key, value) =>
+            {
+                bestSDK = value;
+            });
+
+            if (rc == 0 && bestSDK != null)
+            {
+                yield return bestSDK;
+            }
+
+            string[] paths = null;
+            hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) =>
+            {
+                paths = value;
+            });
+
+            if (rc != 0)
+            {
+                yield break;
             }
 
             // The paths are sorted in increasing order. We want to return the newest SDKs first, however,
             // so iterate over the list in reverse order. If basePath is disqualified because it was later
             // than the runtime version, this ensures that RegisterDefaults will return the latest valid
             // SDK instead of the earliest installed.
-            for (int i = paths.Count - 1; i >= 0; i--)
+            for (int i = paths.Length - 1; i >= 0; i--)
             {
                 yield return paths[i];
             }
