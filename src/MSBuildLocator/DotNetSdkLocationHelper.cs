@@ -142,7 +142,10 @@ namespace Microsoft.Build.Locator
             string bestSDK = null;
             int rc = hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, result: (key, value) =>
             {
-                bestSDK = value;
+                if (key == hostfxr_resolve_sdk2_result_key_t.resolved_sdk_dir)
+                {
+                    bestSDK = value;
+                }
             });
 
             if (rc == 0 && bestSDK != null)
