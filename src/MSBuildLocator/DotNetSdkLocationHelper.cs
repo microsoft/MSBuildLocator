@@ -170,7 +170,10 @@ namespace Microsoft.Build.Locator
             // SDK instead of the earliest installed.
             for (int i = paths.Length - 1; i >= 0; i--)
             {
-                yield return paths[i];
+                if (paths[i] != bestSDK)
+                {
+                    yield return paths[i];
+                }
             }
         }
     }
