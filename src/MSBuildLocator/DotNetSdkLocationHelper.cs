@@ -112,12 +112,30 @@ namespace Microsoft.Build.Locator
 
         private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory)
         {
-            string dotnetPath = null;
-            foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(';'))
+            string dotnetPath = File.Exists("/usr/share/dotnet/dotnet") ? "/usr/share/dotnet" :
+            File.Exists($"/home/{Environment.GetEnvironmentVariable("USER")}/share/dotnet/dotnet ? $"/home/{Environment.GetEnvironmentVariable("USER")}/share/dotnet" :
+            File.Exists("dotnet") ? "." :
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_HOME") ? Environment.GetEnvironmentVariable("DOTNET_HOME") :
+            null;
+
+            if (dotnetPath == null)
             {
-                if (File.Exists(Path.Combine(dir, "dotnet.exe")))
+                // Windows
+                foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(';'))
                 {
-                    dotnetPath = dir;
+                    if (File.Exists(Path.Combine(dir, "dotnet.exe")))
+                    {
+                        dotnetPath = dir;
+                    }
+                }
+
+                // Unix
+                foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(':'))
+                {
+                    if (File.Exists(Path.Combine(dir, "dotnet")))
+                    {
+                        dotnetPath = dir;
+                    }
                 }
             }
 
