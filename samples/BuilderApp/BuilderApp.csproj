@@ -17,7 +17,7 @@
       only used to compile against and that the runtime assemblies used are chosen by MSBuildLocator.
     -->
     <PackageReference Include="Microsoft.Build" Version="15.5.180" ExcludeAssets="Runtime" />
-    <PackageReference Include="Microsoft.Build.Framework" Version="15.5.180" ExcludeAssets="Runtime" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="17.2.0" ExcludeAssets="Runtime" />
   </ItemGroup>
 
   <ItemGroup>
