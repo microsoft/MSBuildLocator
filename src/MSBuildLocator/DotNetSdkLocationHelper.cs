@@ -110,34 +110,48 @@ namespace Microsoft.Build.Locator
         [DllImport("hostfxr", CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern int hostfxr_get_available_sdks(string exe_dir, hostfxr_get_available_sdks_result_fn result);
 
+        [DllImport("libc", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr realpath(string path, IntPtr buffer);
+
+        [DllImport("libc", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void free(IntPtr ptr);
+
+        private static string realpath(string path)
+        {
+            IntPtr ptr = realpath(path, IntPtr.Zero);
+            string result = Marshal.PtrToStringAuto(ptr);
+            free(ptr);
+            return result;
+        }
+
         private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory)
         {
-            string dotnetPath = File.Exists("/usr/share/dotnet/dotnet") ? "/usr/share/dotnet" :
-            File.Exists($"/home/{Environment.GetEnvironmentVariable("USER")}/share/dotnet/dotnet") ? $"/home/{Environment.GetEnvironmentVariable("USER")}/share/dotnet" :
-            File.Exists("dotnet") ? "." :
-            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_HOME")) ? Environment.GetEnvironmentVariable("DOTNET_HOME") :
-            null;
+            string dotnetPath = null;
 
-            if (dotnetPath == null)
+            // Windows
+            foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(';'))
             {
-                // Windows
-                foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(';'))
+                if (File.Exists(Path.Combine(dir, "dotnet.exe")))
                 {
-                    if (File.Exists(Path.Combine(dir, "dotnet.exe")))
-                    {
-                        dotnetPath = dir;
-                    }
+                    dotnetPath = dir;
+                    break;
                 }
+            }
 
+            if (dotnetPath is null)
+            {
                 // Unix
                 foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(':'))
                 {
                     if (File.Exists(Path.Combine(dir, "dotnet")))
                     {
                         dotnetPath = dir;
+                        break;
                     }
                 }
             }
+
+            dotnetPath = realpath(dotnetPath) ?? dotnetPath;
 
             string bestSDK = null;
             int rc = hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, result: (key, value) =>
