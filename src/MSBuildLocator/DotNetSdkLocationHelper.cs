@@ -143,9 +143,10 @@ namespace Microsoft.Build.Locator
                 // Unix
                 foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(':'))
                 {
-                    if (File.Exists(Path.Combine(dir, "dotnet")))
+                    string filePath = Path.Combine(dir, "dotnet");
+                    if (File.Exists(filePath))
                     {
-                        dotnetPath = dir;
+                        dotnetPath = filePath;
                         break;
                     }
                 }
@@ -153,6 +154,7 @@ namespace Microsoft.Build.Locator
                 if (dotnetPath != null)
                 {
                     dotnetPath = realpath(dotnetPath) ?? dotnetPath;
+                    dotnetPath = Path.GetDirectoryName(dotnetPath);
                 }
             }
 
