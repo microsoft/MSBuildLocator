@@ -149,9 +149,13 @@ namespace Microsoft.Build.Locator
                         break;
                     }
                 }
+
+                if (dotnetPath != null)
+                {
+                    dotnetPath = realpath(dotnetPath) ?? dotnetPath;
+                }
             }
 
-            dotnetPath = realpath(dotnetPath) ?? dotnetPath;
 
             string bestSDK = null;
             int rc = hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, result: (key, value) =>
