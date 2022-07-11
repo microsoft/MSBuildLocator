@@ -128,19 +128,19 @@ namespace Microsoft.Build.Locator
         {
             string dotnetPath = null;
 
-            // Windows
-            foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(';'))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                if (File.Exists(Path.Combine(dir, "dotnet.exe")))
+                foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(';'))
                 {
-                    dotnetPath = dir;
-                    break;
+                    if (File.Exists(Path.Combine(dir, "dotnet.exe")))
+                    {
+                        dotnetPath = dir;
+                        break;
+                    }
                 }
             }
-
-            if (dotnetPath is null)
+            else
             {
-                // Unix
                 foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(':'))
                 {
                     string filePath = Path.Combine(dir, "dotnet");
