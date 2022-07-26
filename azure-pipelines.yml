@@ -29,6 +29,13 @@ steps:
     TargetFolder: '$(Build.ArtifactStagingDirectory)/symbols'
     CleanTargetFolder: true
 
+- task: PublishSymbols@2
+  displayName: 'Enable Source Server'
+  inputs:
+    SymbolsFolder: '$(Build.ArtifactStagingDirectory)\symbols'
+    SearchPattern: '**/*.pdb'
+    SymbolServerType: TeamServices
+
 - task: PublishBuildArtifacts@1
   displayName: 'Upload Symbols Artifact'
   inputs:
