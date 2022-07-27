@@ -63,7 +63,7 @@ steps:
 - task: PublishPipelineArtifact@1
   displayName: 'Upload MicroBuildOutputs to drop'
   inputs:
-    TargetPath: '$(Build.StagingDirectory)\MicroBuild\Output'
+    TargetPath: '$(Build.StagingDirectory)\bin'
     ArtifactName: MicroBuildOutputs
   continueOnError: true
 
