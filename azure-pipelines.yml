@@ -45,7 +45,7 @@ steps:
 - task: CopyFiles@2
   displayName: 'Copy Bin to drop'
   inputs:
-    SourceFolder: '$(Build.StagingDirectory)\src\MSBuildLocator\bin\Release'
+    SourceFolder: 'src\MSBuildLocator\bin\Release'
     TargetFolder: '$(Build.ArtifactStagingDirectory)\bin'
 
 - task: PublishBuildArtifacts@1
@@ -57,7 +57,7 @@ steps:
 - task: CopyFiles@2
   displayName: 'Copy NuGet to drop'
   inputs:
-    SourceFolder: '$(Build.StagingDirectory)\src\MSBuildLocator\bin\Release'
+    SourceFolder: 'src\MSBuildLocator\bin\Release'
     Contents: '*.nupkg'
     TargetFolder: '$(Build.ArtifactStagingDirectory)\pkg'
 
@@ -77,7 +77,6 @@ steps:
 - task: CopyFiles@2
   displayName: 'Copy logs to drop'
   inputs:
-    SourceFolder: '$(Build.StagingDirectory)'
     Contents: '**\*.*log'
     TargetFolder: '$(Build.ArtifactStagingDirectory)\logs'
 
