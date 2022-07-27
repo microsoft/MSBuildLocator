@@ -42,16 +42,29 @@ steps:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/symbols'
     ArtifactName: Symbols
 
+- task: CopyFiles@2
+  displayName: 'Copy Bin to drop'
+  inputs:
+    SourceFolder: '$(Build.StagingDirectory)\src\MSBuildLocator\bin\Release'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)\bin'
+
 - task: PublishBuildArtifacts@1
   displayName: 'Upload Bin to drop'
   inputs:
-    PathToPublish: '$(Build.StagingDirectory)\src\MSBuildLocator\bin'
+    PathToPublish: '$(Build.ArtifactStagingDirectory)\bin'
     ArtifactName: bin
+
+- task: CopyFiles@2
+  displayName: 'Copy NuGet to drop'
+  inputs:
+    SourceFolder: '$(Build.StagingDirectory)\src\MSBuildLocator\bin\Release'
+    Contents: '*.nupkg'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)\pkg'
 
 - task: PublishBuildArtifacts@1
   displayName: 'Upload NuGet to drop'
   inputs:
-    PathToPublish: '$(Build.StagingDirectory)\src\MSBuildLocator\bin\$(BuildConfiguration)\*.nupkg'
+    PathToPublish: '$(Build.ArtifactStagingDirectory)\pkg'
     ArtifactName: pkg
 
 - task: PublishPipelineArtifact@1
@@ -61,10 +74,17 @@ steps:
     ArtifactName: MicroBuildOutputs
   continueOnError: true
 
+- task: CopyFiles@2
+  displayName: 'Copy logs to drop'
+  inputs:
+    SourceFolder: '$(Build.StagingDirectory)'
+    Contents: '**\*.*log'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)\logs'
+
 - task: PublishBuildArtifacts@1
   displayName: 'Upload logs to drop'
   inputs:
-    PathToPublish: '$(Build.StagingDirectory)\logs\src\MSBuildLocator'
+    PathToPublish: '$(Build.ArtifactStagingDirectory)\logs'
     ArtifactName: logs
   condition: succeededOrFailed()
 
