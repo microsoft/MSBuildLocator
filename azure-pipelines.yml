@@ -64,7 +64,7 @@ steps:
 - task: PublishBuildArtifacts@1
   displayName: 'Upload logs to drop'
   inputs:
-    PathToPublish: '$(Build.StagingDirectory)\logs\src\MSBuildLocator
+    PathToPublish: '$(Build.StagingDirectory)\logs\src\MSBuildLocator'
     ArtifactName: logs
   condition: succeededOrFailed()
 
