@@ -42,12 +42,14 @@ steps:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/symbols'
     ArtifactName: Symbols
 
-- task: PublishPipelineArtifact@1
-  displayName: 'Upload MicroBuildOutputs to drop'
+- task: CopyPublishBuildArtifacts@1
+  displayName: 'Upload Bin to drop'
   inputs:
-    targetPath: '$(Build.StagingDirectory)\MicroBuild\Output'
-    artifactName: MicroBuildOutputs
-  continueOnError: true
+    Contents: |
+     src\MSBuildLocator\bin\**
+     
+    ArtifactName: bin
+    ArtifactType: Container
 
 - task: CopyPublishBuildArtifacts@1
   displayName: 'Upload NuGet to drop'
@@ -58,13 +60,11 @@ steps:
     ArtifactName: pkg
     ArtifactType: Container
 
-- task: CopyPublishBuildArtifacts@1
+- task: PublishPipelineArtifact@1
   displayName: 'Upload MicroBuildOutputs to drop'
   inputs:
-    CopyRoot: '$(Build.StagingDirectory)\MicroBuild\Output'
-    Contents: '**'
+    TargetPath: '$(Build.StagingDirectory)\MicroBuild\Output'
     ArtifactName: MicroBuildOutputs
-    ArtifactType: Container
   continueOnError: true
 
 - task: CopyPublishBuildArtifacts@1
