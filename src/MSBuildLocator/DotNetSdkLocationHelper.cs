@@ -78,91 +78,44 @@ namespace Microsoft.Build.Locator
             }
         }
 
-        enum hostfxr_resolve_sdk2_flags_t
-        {
-            disallow_prerelease = 0x1,
-        };
-
-        enum hostfxr_resolve_sdk2_result_key_t
-        {
-            resolved_sdk_dir = 0,
-            global_json_path = 1,
-        };
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
-        private delegate void hostfxr_resolve_sdk2_result_fn(
-                hostfxr_resolve_sdk2_result_key_t key,
-                string value);
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
-        private delegate void hostfxr_get_available_sdks_result_fn(
-                hostfxr_resolve_sdk2_result_key_t key,
-                [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)]
-                string[] value);
-
-        [DllImport("hostfxr", CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int hostfxr_resolve_sdk2(
-            string exe_dir,
-            string working_dir,
-            hostfxr_resolve_sdk2_flags_t flags,
-            hostfxr_resolve_sdk2_result_fn result);
-
-        [DllImport("hostfxr", CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int hostfxr_get_available_sdks(string exe_dir, hostfxr_get_available_sdks_result_fn result);
-
-        [DllImport("libc", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr realpath(string path, IntPtr buffer);
-
-        [DllImport("libc", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void free(IntPtr ptr);
-
         private static string realpath(string path)
         {
-            IntPtr ptr = realpath(path, IntPtr.Zero);
+            IntPtr ptr = NativeMethods.realpath(path, IntPtr.Zero);
             string result = Marshal.PtrToStringAuto(ptr);
-            free(ptr);
+            NativeMethods.free(ptr);
             return result;
         }
 
         private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory)
         {
             string dotnetPath = null;
+            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            string exeName = isWindows ? "dotnet.exe" : "dotnet";
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            // We will generally find the dotnet exe on the path, but on linux, it is often just a 'dotnet' symlink (possibly even to more symlinks) that we have to resolve
+            // to the real dotnet executable.
+            // This will work as often as just invoking dotnet from the command line, but we can be more confident in finding a dotnet executable by following
+            // https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md
+            // This can be done using the nethost library. We didn't do this previously, so I did not implement this extension.
+            foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator))
             {
-                foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(';'))
+                string filePath = Path.Combine(dir, exeName);
+                if (File.Exists(Path.Combine(dir, exeName)))
                 {
-                    if (File.Exists(Path.Combine(dir, "dotnet.exe")))
-                    {
-                        dotnetPath = dir;
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(':'))
-                {
-                    string filePath = Path.Combine(dir, "dotnet");
-                    if (File.Exists(filePath))
-                    {
-                        dotnetPath = filePath;
-                        break;
-                    }
-                }
-
-                if (dotnetPath != null)
-                {
-                    dotnetPath = realpath(dotnetPath) ?? dotnetPath;
-                    dotnetPath = Path.GetDirectoryName(dotnetPath);
+                    dotnetPath = filePath;
+                    break;
                 }
             }
 
+            if (dotnetPath != null)
+            {
+                dotnetPath = Path.GetDirectoryName(isWindows ? dotnetPath : realpath(dotnetPath) ?? dotnetPath);
+            }
 
             string bestSDK = null;
-            int rc = hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, result: (key, value) =>
+            int rc = NativeMethods.hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, result: (key, value) =>
             {
-                if (key == hostfxr_resolve_sdk2_result_key_t.resolved_sdk_dir)
+                if (key == NativeMethods.hostfxr_resolve_sdk2_result_key_t.resolved_sdk_dir)
                 {
                     bestSDK = value;
                 }
@@ -174,7 +127,7 @@ namespace Microsoft.Build.Locator
             }
 
             string[] paths = null;
-            hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) =>
+            NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) =>
             {
                 paths = value;
             });
