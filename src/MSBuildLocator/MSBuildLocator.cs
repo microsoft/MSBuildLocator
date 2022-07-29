@@ -3,11 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 
 #if NETCOREAPP
 using System.Runtime.Loader;
@@ -26,8 +26,6 @@ namespace Microsoft.Build.Locator
             "Microsoft.Build.Framework",
             "Microsoft.Build.Tasks.Core",
             "Microsoft.Build.Utilities.Core",
-            "System.Runtime.CompilerServices.Unsafe",
-            "System.Numerics.Vectors"
         };
 
 #if NET46
@@ -35,9 +33,6 @@ namespace Microsoft.Build.Locator
 #else
         private static Func<AssemblyLoadContext, AssemblyName, Assembly> s_registeredHandler;
 #endif
-
-        // Used to determine when it's time to unregister the registeredHandler.
-        private static int numResolvedAssemblies;
 
         /// <summary>
         ///     Gets a value indicating whether an instance of MSBuild is currently registered.
@@ -93,7 +88,7 @@ namespace Microsoft.Build.Locator
         /// <returns>Instance of Visual Studio found and registered.</returns>
         public static VisualStudioInstance RegisterDefaults()
         {
-            var instance = GetInstances(VisualStudioInstanceQueryOptions.Default).FirstOrDefault();
+            VisualStudioInstance instance = GetInstances(VisualStudioInstanceQueryOptions.Default).FirstOrDefault();
             if (instance == null)
             {
                 var error = "No instances of MSBuild could be detected." +
@@ -128,7 +123,16 @@ namespace Microsoft.Build.Locator
                 ApplyDotNetSdkEnvironmentVariables(instance.MSBuildPath);
             }
 
-            RegisterMSBuildPath(instance.MSBuildPath);
+            // Find and load NuGet assemblies if msbuildPath is in a VS installation
+            string nugetPath = Path.GetFullPath(Path.Combine(instance.MSBuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet"));
+            if (Directory.Exists(nugetPath))
+            {
+                RegisterMSBuildPath(new string[] { instance.MSBuildPath, nugetPath });
+            }
+            else
+            {
+                RegisterMSBuildPath(instance.MSBuildPath);
+            }
         }
 
         /// <summary>
@@ -144,14 +148,44 @@ namespace Microsoft.Build.Locator
         /// </param>
         public static void RegisterMSBuildPath(string msbuildPath)
         {
-            if (string.IsNullOrWhiteSpace(msbuildPath))
+            RegisterMSBuildPath(new string[] { msbuildPath });
+        }
+
+        /// <summary>
+        ///     Add assembly resolution for Microsoft.Build core dlls in the current AppDomain from the specified
+        ///     path.
+        /// </summary>
+        /// <param name="msbuildSearchPaths">
+        ///     Paths to directories containing a deployment of MSBuild binaries.
+        ///     A minimal MSBuild deployment would be the publish result of the Microsoft.Build.Runtime package.
+        ///
+        ///     In order to restore and build real projects, one needs a deployment that contains the rest of the toolchain (nuget, compilers, etc.).
+        ///     Such deployments can be found in installations such as Visual Studio or dotnet CLI.
+        /// </param>
+        public static void RegisterMSBuildPath(string[] msbuildSearchPaths)
+        {
+            if (msbuildSearchPaths.Length < 1)
             {
-                throw new ArgumentException("Value may not be null or whitespace", nameof(msbuildPath));
+                throw new ArgumentException("Must provide at least one search path to RegisterMSBuildPath.");
             }
 
-            if (!Directory.Exists(msbuildPath))
+            List<ArgumentException> nullOrWhiteSpaceExceptions = new List<ArgumentException>();
+            for (int i = 0; i < msbuildSearchPaths.Length; i++)
             {
-                throw new ArgumentException($"Directory \"{msbuildPath}\" does not exist", nameof(msbuildPath));
+                if (string.IsNullOrWhiteSpace(msbuildSearchPaths[i]))
+                {
+                    nullOrWhiteSpaceExceptions.Add(new ArgumentException($"Value at position {i+1} may not be null or whitespace", nameof(msbuildSearchPaths)));
+                }
+            }
+            if (nullOrWhiteSpaceExceptions.Count > 0)
+            {
+                throw new AggregateException("Search paths for MSBuild assemblies cannot be null and must contain non-whitespace characters.", nullOrWhiteSpaceExceptions);
+            }
+
+            IEnumerable<string> paths = msbuildSearchPaths.Where(path => !Directory.Exists(path));
+            if (paths.Any())
+            {
+                throw new AggregateException($"A directory or directories in \"{nameof(msbuildSearchPaths)}\" do not exist", paths.Select(path => new ArgumentException($"Directory \"{path}\" does not exist", nameof(msbuildSearchPaths))));
             }
 
             if (!CanRegister)
@@ -173,7 +207,29 @@ namespace Microsoft.Build.Locator
             }
 
             // AssemblyResolve event can fire multiple times for the same assembly, so keep track of what's already been loaded.
-            var loadedAssemblies = new Dictionary<string, Assembly>(s_msBuildAssemblies.Length);
+            var loadedAssemblies = new Dictionary<string, Assembly>();
+
+#if NET46
+            // MSBuild can be loaded from the x86 or x64 folder. Before 17.0, it looked next to the executing assembly in some cases and constructed a path that assumed x86 in others.
+            // This overrides the latter assumption to let it find the right MSBuild.
+            foreach (string path in msbuildSearchPaths)
+            {
+                string msbuildExe = Path.Combine(path, "MSBuild.exe");
+                if (File.Exists(msbuildExe))
+                {
+                    FileVersionInfo ver = FileVersionInfo.GetVersionInfo(msbuildExe);
+                    if (ver.FileMajorPart < 17 || (ver.FileMajorPart == 17 && ver.FileMinorPart < 1))
+                    {
+                        if (Path.GetDirectoryName(msbuildExe).EndsWith(@"\amd64", StringComparison.OrdinalIgnoreCase))
+                        {
+                            msbuildExe = Path.Combine(path.Substring(0, path.Length - 6), "MSBuild.exe");
+                        }
+                        Environment.SetEnvironmentVariable("MSBUILD_EXE_PATH", msbuildExe);
+                    }
+                    break;
+                }
+            }
+#endif
 
             // Saving the handler in a static field so it can be unregistered later.
 #if NET46
@@ -185,7 +241,7 @@ namespace Microsoft.Build.Locator
 
             AppDomain.CurrentDomain.AssemblyResolve += s_registeredHandler;
 #else
-            s_registeredHandler = (assemblyLoadContext, assemblyName) => 
+            s_registeredHandler = (_, assemblyName) => 
             {
                 return TryLoadAssembly(assemblyName);
             };
@@ -200,23 +256,18 @@ namespace Microsoft.Build.Locator
                 // Assembly resolution is not thread-safe.
                 lock (loadedAssemblies)
                 {
-                    Assembly assembly;
-                    if (loadedAssemblies.TryGetValue(assemblyName.FullName, out assembly))
+                    if (loadedAssemblies.TryGetValue(assemblyName.FullName, out Assembly assembly))
                     {
                         return assembly;
                     }
 
-                    if (IsMSBuildAssembly(assemblyName))
+                    // Look in the MSBuild folder for any unresolved reference. It may be a dependency
+                    // of MSBuild or a task.
+                    foreach (string msbuildPath in msbuildSearchPaths)
                     {
-                        var targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
+                        string targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
                         if (File.Exists(targetAssembly))
                         {
-                            // Automatically unregister the handler once all supported assemblies have been loaded.
-                            if (Interlocked.Increment(ref numResolvedAssemblies) == s_msBuildAssemblies.Length)
-                            {
-                                Unregister();
-                            }
-
                             assembly = Assembly.LoadFrom(targetAssembly);
                             loadedAssemblies.Add(assemblyName.FullName, assembly);
                             return assembly;
@@ -238,19 +289,9 @@ namespace Microsoft.Build.Locator
         {
             if (!IsRegistered)
             {
-                var error = $"{typeof(MSBuildLocator)}.{nameof(Unregister)} was called, but no MSBuild instance is registered." + Environment.NewLine;
-                if (numResolvedAssemblies == 0)
-                {
-                    error += $"Ensure that {nameof(RegisterInstance)}, {nameof(RegisterMSBuildPath)}, or {nameof(RegisterDefaults)} is called before calling this method.";
-                }
-                else
-                {
-                    error += "Unregistration automatically occurs once all supported assemblies are loaded into the current AppDomain and so generally is not necessary to call directly.";
-                }
-
-                error += Environment.NewLine +
-                         $"{nameof(IsRegistered)} should be used to determine whether calling {nameof(Unregister)} is a valid operation.";
-
+                var error = $"{typeof(MSBuildLocator)}.{nameof(Unregister)} was called, but no MSBuild instance is registered." + Environment.NewLine +
+                            $"Ensure that {nameof(RegisterInstance)}, {nameof(RegisterMSBuildPath)}, or {nameof(RegisterDefaults)} is called before calling this method." + Environment.NewLine +
+                            $"{nameof(IsRegistered)} should be used to determine whether calling {nameof(Unregister)} is a valid operation.";
                 throw new InvalidOperationException(error);
             }
 
@@ -324,8 +365,7 @@ namespace Microsoft.Build.Locator
 #endif
 
 #if NETCOREAPP
-            var dotnetSdk = DotNetSdkLocationHelper.GetInstance(options.WorkingDirectory);
-            if (dotnetSdk != null)
+            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory))
                 yield return dotnetSdk;
 #endif
         }
