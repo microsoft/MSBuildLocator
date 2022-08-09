@@ -127,11 +127,12 @@ namespace Microsoft.Build.Locator
             }
 
             string[] paths = null;
-            NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) =>
+            rc = NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) =>
             {
                 paths = value;
             });
 
+            // Errors are automatically printed to stderr. We should not continue to try to output anything if we failed.
             if (rc != 0)
             {
                 yield break;

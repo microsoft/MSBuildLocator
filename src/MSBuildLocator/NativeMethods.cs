@@ -45,6 +45,5 @@ namespace Microsoft.Build.Locator
 
         [DllImport("libc", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void free(IntPtr ptr);
-
     }
 }
