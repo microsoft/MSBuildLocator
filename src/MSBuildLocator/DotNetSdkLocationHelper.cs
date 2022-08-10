@@ -125,6 +125,10 @@ namespace Microsoft.Build.Locator
             {
                 yield return bestSDK;
             }
+            else if (rc != 0)
+            {
+                throw new InvalidOperationException("Failed to find an appropriate version of .NET Core MSBuild. Call to hostfxr_resolve_sdk2 failed. There may be more details in stderr.");
+            }
 
             string[] paths = null;
             rc = NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) =>
@@ -135,6 +139,7 @@ namespace Microsoft.Build.Locator
             // Errors are automatically printed to stderr. We should not continue to try to output anything if we failed.
             if (rc != 0)
             {
+                throw new InvalidOperationException("Failed to find all versions of .NET Core MSBuild. Call to hostfxr_get_available_sdks failed. There may be more details in stderr.");
                 yield break;
             }
 
