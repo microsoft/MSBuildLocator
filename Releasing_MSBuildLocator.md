@@ -5,7 +5,7 @@
 3. Once approved, merge it.
 4. It will automatically start a pipeline build [here](https://dev.azure.com/devdiv/DevDiv/_build?definitionId=11881).
 5. Once it succeeds, proceed to [our release page](https://dev.azure.com/devdiv/DevDiv/_release?_a=releases&view=mine&definitionId=408) and create a release (top-right). Specify the build that succeeded.
-6. At some point, it will stop to request permission to continue. If you want to publish to NuGet, do so. It will make a little more progress then ask again. Tell it to resume again, and it will publish the package to NuGet!
+6. At some point, it will stop to request permission to continue. If you want to publish to NuGet, do so, clicking Approve. It will make a little more progress and push to NuGet! It will then give you the option to "resume" (or cancel) twice. Do so.
 
 ### Releasing a non-preview version of MSBuildLocator
 
