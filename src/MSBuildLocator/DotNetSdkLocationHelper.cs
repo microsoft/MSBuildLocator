@@ -140,7 +140,6 @@ namespace Microsoft.Build.Locator
             if (rc != 0)
             {
                 throw new InvalidOperationException("Failed to find all versions of .NET Core MSBuild. Call to hostfxr_get_available_sdks failed. There may be more details in stderr.");
-                yield break;
             }
 
             // The paths are sorted in increasing order. We want to return the newest SDKs first, however,
