@@ -314,17 +314,9 @@ namespace Microsoft.Build.Locator
             const string MSBuildExtensionsPath = nameof(MSBuildExtensionsPath);
             const string MSBuildSDKsPath = nameof(MSBuildSDKsPath);
 
-            var variables = new Dictionary<string, string>
-            {
-                [MSBUILD_EXE_PATH] = dotNetSdkPath + "MSBuild.dll",
-                [MSBuildExtensionsPath] = dotNetSdkPath,
-                [MSBuildSDKsPath] = dotNetSdkPath + "Sdks"
-            };
-
-            foreach (var kvp in variables)
-            {
-                Environment.SetEnvironmentVariable(kvp.Key, kvp.Value);
-            }
+            Environment.SetEnvironmentVariable(MSBUILD_EXE_PATH, Path.Combine(dotNetSdkPath, "MSBuild.dll"));
+            Environment.SetEnvironmentVariable(MSBuildExtensionsPath, dotNetSdkPath);
+            Environment.SetEnvironmentVariable(MSBuildSDKsPath, Path.Combine(dotNetSdkPath, "Sdks"));
         }
 
         private static bool IsMSBuildAssembly(Assembly assembly) => IsMSBuildAssembly(assembly.GetName());
