@@ -316,9 +316,9 @@ namespace Microsoft.Build.Locator
 
             var variables = new Dictionary<string, string>
             {
-                [MSBUILD_EXE_PATH] = dotNetSdkPath + "MSBuild.dll",
+                [MSBUILD_EXE_PATH] = Path.Combine(dotNetSdkPath, "MSBuild.dll"),
                 [MSBuildExtensionsPath] = dotNetSdkPath,
-                [MSBuildSDKsPath] = dotNetSdkPath + "Sdks"
+                [MSBuildSDKsPath] = Path.Combine(dotNetSdkPath, "Sdks")
             };
 
             foreach (var kvp in variables)
