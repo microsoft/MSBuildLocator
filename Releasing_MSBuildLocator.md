@@ -1,5 +1,7 @@
 ### Releasing MSBuildLocator
 
+These instructions can only be followed by Microsoft-internal MSBuild maintainers.
+
 1. Create a PR in https://github.com/microsoft/MSBuildLocator
 2. Have it reviewed.
 3. Once approved, merge it.
