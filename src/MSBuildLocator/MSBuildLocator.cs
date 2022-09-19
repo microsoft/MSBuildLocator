@@ -104,6 +104,29 @@ namespace Microsoft.Build.Locator
         }
 
         /// <summary>
+        ///     Discover instances of Visual Studio and register the one with the highest version number. See <see cref="RegisterInstance" />.
+        /// </summary>
+        /// <returns>Instance of Visual Studio found and registered.</returns>
+        public static VisualStudioInstance RegisterLatest()
+        {
+            VisualStudioInstance instance = GetInstances(VisualStudioInstanceQueryOptions.Default)
+                .OrderByDescending(i => i.Version)
+                .FirstOrDefault();
+            if (instance == null)
+            {
+                var error = "No instances of MSBuild could be detected." +
+                            Environment.NewLine +
+                            $"Try calling {nameof(RegisterInstance)} or {nameof(RegisterMSBuildPath)} to manually register one.";
+
+                throw new InvalidOperationException(error);
+            }
+
+            RegisterInstance(instance);
+
+            return instance;
+        }
+
+        /// <summary>
         ///     Add assembly resolution for Microsoft.Build core dlls in the current AppDomain from the specified
         ///     instance of Visual Studio. See <see cref="QueryVisualStudioInstances()" /> to discover Visual Studio
         ///     instances or use <see cref="RegisterDefaults" />.
