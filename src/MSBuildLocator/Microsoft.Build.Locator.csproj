@@ -22,7 +22,7 @@
 
   <ItemGroup Condition="'$(TargetFramework)'=='net46'">
     <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.3.2180" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes" Version="15.0.21" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes" Version="15.0.36" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
