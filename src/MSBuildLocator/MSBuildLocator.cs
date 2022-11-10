@@ -15,6 +15,9 @@ using System.Runtime.Loader;
 
 namespace Microsoft.Build.Locator
 {
+    /// <summary>
+    /// MSBuildLocator allows the use of publicly visible MSBuild APIs in custom applications. See our documentation at aka.ms/msbuild/locator.
+    /// </summary>
     public static class MSBuildLocator
     {
         private const string MSBuildPublicKeyToken = "b03f5f7f11d50a3a";
@@ -305,7 +308,7 @@ namespace Microsoft.Build.Locator
         /// <summary>
         ///     Ensures the proper MSBuild environment variables are populated for DotNet SDK.
         /// </summary>
-        /// <param name="msbuildPath">
+        /// <param name="dotNetSdkPath">
         ///     Path to the directory containing the DotNet SDK.
         /// </param>
         private static void ApplyDotNetSdkEnvironmentVariables(string dotNetSdkPath)
