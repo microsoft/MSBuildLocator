@@ -309,7 +309,7 @@ namespace Microsoft.Build.Locator
         ///     Ensures the proper MSBuild environment variables are populated for DotNet SDK.
         /// </summary>
         /// <param name="dotNetSdkPath">
-        ///     Path to the directory containing the DotNet SDK.
+        ///     Path to the directory containing the .NET SDK.
         /// </param>
         private static void ApplyDotNetSdkEnvironmentVariables(string dotNetSdkPath)
         {
