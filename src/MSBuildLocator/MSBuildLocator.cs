@@ -16,7 +16,7 @@ using System.Runtime.Loader;
 namespace Microsoft.Build.Locator
 {
     /// <summary>
-    /// MSBuildLocator allows the use of publicly visible MSBuild APIs in custom applications. See our documentation at aka.ms/msbuild/locator.
+    /// Allows enumerating installed MSBuild instances and preparing MSBuild APIs for use. See <see href="/visualstudio/msbuild/find-and-use-msbuild-versions">Find and use a version of MSBuild</see>.
     /// </summary>
     public static class MSBuildLocator
     {
