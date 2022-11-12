@@ -15,6 +15,9 @@ using System.Runtime.Loader;
 
 namespace Microsoft.Build.Locator
 {
+    /// <summary>
+    /// Allows enumerating installed MSBuild instances and preparing MSBuild APIs for use. See <see href="/visualstudio/msbuild/find-and-use-msbuild-versions">Find and use a version of MSBuild</see>.
+    /// </summary>
     public static class MSBuildLocator
     {
         private const string MSBuildPublicKeyToken = "b03f5f7f11d50a3a";
@@ -305,8 +308,8 @@ namespace Microsoft.Build.Locator
         /// <summary>
         ///     Ensures the proper MSBuild environment variables are populated for DotNet SDK.
         /// </summary>
-        /// <param name="msbuildPath">
-        ///     Path to the directory containing the DotNet SDK.
+        /// <param name="dotNetSdkPath">
+        ///     Path to the directory containing the .NET SDK.
         /// </param>
         private static void ApplyDotNetSdkEnvironmentVariables(string dotNetSdkPath)
         {
