@@ -92,24 +92,32 @@ namespace Microsoft.Build.Locator
             bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
             string exeName = isWindows ? "dotnet.exe" : "dotnet";
 
-            // We will generally find the dotnet exe on the path, but on linux, it is often just a 'dotnet' symlink (possibly even to more symlinks) that we have to resolve
-            // to the real dotnet executable.
-            // This will work as often as just invoking dotnet from the command line, but we can be more confident in finding a dotnet executable by following
-            // https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md
-            // This can be done using the nethost library. We didn't do this previously, so I did not implement this extension.
-            foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator))
+            if (Process.GetCurrentProcess().ProcessName.Equals(exeName))
             {
-                string filePath = Path.Combine(dir, exeName);
-                if (File.Exists(Path.Combine(dir, exeName)))
-                {
-                    dotnetPath = filePath;
-                    break;
-                }
+                // We're already in a dotnet process! Use it.
+                dotnetPath = Process.GetCurrentProcess().MainModule.FileName;
             }
-
-            if (dotnetPath != null)
+            else
             {
-                dotnetPath = Path.GetDirectoryName(isWindows ? dotnetPath : realpath(dotnetPath) ?? dotnetPath);
+                // We will generally find the dotnet exe on the path, but on linux, it is often just a 'dotnet' symlink (possibly even to more symlinks) that we have to resolve
+                // to the real dotnet executable.
+                // This will work as often as just invoking dotnet from the command line, but we can be more confident in finding a dotnet executable by following
+                // https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md
+                // This can be done using the nethost library. We didn't do this previously, so I did not implement this extension.
+                foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator))
+                {
+                    string filePath = Path.Combine(dir, exeName);
+                    if (File.Exists(Path.Combine(dir, exeName)))
+                    {
+                        dotnetPath = filePath;
+                        break;
+                    }
+                }
+
+                if (dotnetPath != null)
+                {
+                    dotnetPath = Path.GetDirectoryName(isWindows ? dotnetPath : realpath(dotnetPath) ?? dotnetPath);
+                }
             }
 
             string bestSDK = null;
