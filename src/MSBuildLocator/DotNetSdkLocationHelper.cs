@@ -102,9 +102,10 @@ namespace Microsoft.Build.Locator
                 string filePath = Path.Combine(dir, exeName);
                 if (File.Exists(Path.Combine(dir, exeName)))
                 {
-                    dotnetPath = Path.GetDirectoryName(isWindows ? filePath : realpath(filePath) ?? filePath);
-                    if (File.Exists(dotnetPath))
+                    filePath = Path.GetDirectoryName(isWindows ? filePath : realpath(filePath) ?? filePath);
+                    if (File.Exists(Path.Combine(filePath, exeName)))
                     {
+                        dotnetPath = filePath;
                         break;
                     }
                 }
