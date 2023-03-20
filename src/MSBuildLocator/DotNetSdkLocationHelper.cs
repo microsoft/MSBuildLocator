@@ -100,7 +100,7 @@ namespace Microsoft.Build.Locator
             foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator))
             {
                 string filePath = Path.Combine(dir, exeName);
-                if (File.Exists(Path.Combine(dir, exeName)))
+                if (File.Exists(filePath))
                 {
                     filePath = Path.GetDirectoryName(isWindows ? filePath : realpath(filePath) ?? filePath);
                     if (File.Exists(Path.Combine(filePath, exeName)))
