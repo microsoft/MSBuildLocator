@@ -92,7 +92,7 @@ namespace Microsoft.Build.Locator
             bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
             string exeName = isWindows ? "dotnet.exe" : "dotnet";
 
-            if (Process.GetCurrentProcess().ProcessName.Equals(exeName))
+            if (Process.GetCurrentProcess().ProcessName.Equals("dotnet"))
             {
                 // We're already in a dotnet process! Use it.
                 dotnetPath = Process.GetCurrentProcess().MainModule.FileName;
