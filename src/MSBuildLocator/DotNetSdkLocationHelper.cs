@@ -91,35 +91,47 @@ namespace Microsoft.Build.Locator
             string dotnetPath = null;
             bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
             string exeName = isWindows ? "dotnet.exe" : "dotnet";
+            bool returnedSDKs = false;
 
-            if (Process.GetCurrentProcess().ProcessName.Equals("dotnet"))
+            // We will generally find the dotnet exe on the path, but on linux, it is often just a 'dotnet' symlink (possibly even to more symlinks) that we have to resolve
+            // to the real dotnet executable.
+            // This will work as often as just invoking dotnet from the command line, but we can be more confident in finding a dotnet executable by following
+            // https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md
+            // This can be done using the nethost library. We didn't do this previously, so I did not implement this extension.
+            foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator))
             {
-                // We're already in a dotnet process! Use it.
-                dotnetPath = Process.GetCurrentProcess().MainModule.FileName;
-            }
-            else
-            {
-                // We will generally find the dotnet exe on the path, but on linux, it is often just a 'dotnet' symlink (possibly even to more symlinks) that we have to resolve
-                // to the real dotnet executable.
-                // This will work as often as just invoking dotnet from the command line, but we can be more confident in finding a dotnet executable by following
-                // https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md
-                // This can be done using the nethost library. We didn't do this previously, so I did not implement this extension.
-                foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator))
+                string filePath = Path.Combine(dir, exeName);
+                if (File.Exists(filePath))
                 {
-                    string filePath = Path.Combine(dir, exeName);
-                    if (File.Exists(Path.Combine(dir, exeName)))
-                    {
-                        dotnetPath = filePath;
-                        break;
-                    }
-                }
-
-                if (dotnetPath != null)
-                {
-                    dotnetPath = Path.GetDirectoryName(isWindows ? dotnetPath : realpath(dotnetPath) ?? dotnetPath);
+                    dotnetPath = filePath;
+                    break;
                 }
             }
 
+            if (dotnetPath != null)
+            {
+                dotnetPath = Path.GetDirectoryName(isWindows ? dotnetPath : realpath(dotnetPath) ?? dotnetPath);
+            }
+
+            foreach (string path in GetDotNetBasePaths(workingDirectory, dotnetPath))
+            {
+                returnedSDKs = true;
+                yield return path;
+            }
+
+            if (!returnedSDKs && Process.GetCurrentProcess().ProcessName.Equals("dotnet"))
+            {
+                // We're already in a dotnet process! Try using it.
+                dotnetPath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
+                foreach (string path in GetDotNetBasePaths(workingDirectory, dotnetPath))
+                {
+                    yield return path;
+                }
+            }
+        }
+
+        private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory, string dotnetPath)
+        {
             string bestSDK = null;
             int rc = NativeMethods.hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, result: (key, value) =>
             {
