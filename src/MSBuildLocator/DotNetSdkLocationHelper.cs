@@ -119,14 +119,20 @@ namespace Microsoft.Build.Locator
                 yield return path;
             }
 
-            if (!returnedSDKs && Process.GetCurrentProcess().ProcessName.Equals("dotnet"))
+            if (Process.GetCurrentProcess().ProcessName.Equals("dotnet"))
             {
                 // We're already in a dotnet process! Try using it.
                 dotnetPath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
                 foreach (string path in GetDotNetBasePaths(workingDirectory, dotnetPath))
                 {
+                    returnedSDKs = true;
                     yield return path;
                 }
+            }
+
+            if (!returnedSDKs)
+            {
+                throw new InvalidOperationException("Failed to find an appropriate version of .NET Core MSBuild. Call to hostfxr_resolve_sdk2 failed. There may be more details in stderr.");
             }
         }
 
@@ -147,7 +153,7 @@ namespace Microsoft.Build.Locator
             }
             else if (rc != 0)
             {
-                throw new InvalidOperationException("Failed to find an appropriate version of .NET Core MSBuild. Call to hostfxr_resolve_sdk2 failed. There may be more details in stderr.");
+                yield break;
             }
 
             string[] paths = null;
@@ -159,7 +165,7 @@ namespace Microsoft.Build.Locator
             // Errors are automatically printed to stderr. We should not continue to try to output anything if we failed.
             if (rc != 0)
             {
-                throw new InvalidOperationException("Failed to find all versions of .NET Core MSBuild. Call to hostfxr_get_available_sdks failed. There may be more details in stderr.");
+                yield break;
             }
 
             // The paths are sorted in increasing order. We want to return the newest SDKs first, however,
