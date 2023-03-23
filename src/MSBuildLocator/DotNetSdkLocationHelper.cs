@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
@@ -14,9 +15,9 @@ namespace Microsoft.Build.Locator
 {
     internal static class DotNetSdkLocationHelper
     {
-        private static readonly Regex DotNetBasePathRegex = new Regex("Base Path:(.*)$", RegexOptions.Multiline);
         private static readonly Regex VersionRegex = new Regex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline);
-        private static readonly Regex SdkRegex = new Regex(@"(\S+) \[(.*?)]$", RegexOptions.Multiline);
+        private static int rc = 0;
+        private static bool pinnedSdk = false;
 
         public static VisualStudioInstance GetInstance(string dotNetSdkPath)
         {            
@@ -92,6 +93,7 @@ namespace Microsoft.Build.Locator
             bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
             string exeName = isWindows ? "dotnet.exe" : "dotnet";
             bool returnedSDKs = false;
+            HashSet<string> sdkPaths = new HashSet<string>();
 
             // We will generally find the dotnet exe on the path, but on linux, it is often just a 'dotnet' symlink (possibly even to more symlinks) that we have to resolve
             // to the real dotnet executable.
@@ -113,11 +115,23 @@ namespace Microsoft.Build.Locator
                 dotnetPath = Path.GetDirectoryName(isWindows ? dotnetPath : realpath(dotnetPath) ?? dotnetPath);
             }
 
+            string pathOfPinnedSdk = string.Empty;
+
             foreach (string path in GetDotNetBasePaths(workingDirectory, dotnetPath))
             {
                 returnedSDKs = true;
-                yield return path;
+                if (pinnedSdk)
+                {
+                    pinnedSdk = false;
+                    pathOfPinnedSdk = path;
+                }
+                else
+                {
+                    sdkPaths.Add(path);
+                }
             }
+
+            string pathOfSecondPinnedSdk = string.Empty;
 
             if (Process.GetCurrentProcess().ProcessName.Equals("dotnet"))
             {
@@ -126,20 +140,56 @@ namespace Microsoft.Build.Locator
                 foreach (string path in GetDotNetBasePaths(workingDirectory, dotnetPath))
                 {
                     returnedSDKs = true;
-                    yield return path;
+                    if (pinnedSdk)
+                    {
+                        pinnedSdk = false;
+                        pathOfSecondPinnedSdk = path;
+                    }
+                    else
+                    {
+                        sdkPaths.Add(path);
+                    }
                 }
             }
 
-            if (!returnedSDKs)
+            if (!returnedSDKs && rc != 0)
             {
                 throw new InvalidOperationException("Failed to find an appropriate version of .NET Core MSBuild. Call to hostfxr_resolve_sdk2 failed. There may be more details in stderr.");
+            }
+            else if (returnedSDKs)
+            {
+                List<string> discoveredSDKs = sdkPaths.ToList();
+                discoveredSDKs.Sort();
+
+                if (!string.IsNullOrEmpty(pathOfPinnedSdk))
+                {
+                    discoveredSDKs.Add(pathOfPinnedSdk);
+                }
+
+                if (!string.IsNullOrEmpty(pathOfSecondPinnedSdk))
+                {
+                    discoveredSDKs.Add(pathOfSecondPinnedSdk);
+                }
+
+                // We currently have the SDKs sorted in increasing version number with the pinned SDKs at the end. Reverse that order.
+                discoveredSDKs.Reverse();
+
+                return discoveredSDKs;
+            }
+            else
+            {
+                return Enumerable.Empty<string>();
             }
         }
 
         private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory, string dotnetPath)
         {
             string bestSDK = null;
-            int rc = NativeMethods.hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, result: (key, value) =>
+            
+            // Only overwrite the return code if we would set it to a non-zero value so that if we ultimately fail to find any SDKs, we can provide
+            // a reasonable error. Otherwise, we would only ever see failures from the last call to GetDotNetBasePaths.
+            int localRC = 0;
+            localRC = NativeMethods.hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, result: (key, value) =>
             {
                 if (key == NativeMethods.hostfxr_resolve_sdk2_result_key_t.resolved_sdk_dir)
                 {
@@ -147,24 +197,27 @@ namespace Microsoft.Build.Locator
                 }
             });
 
-            if (rc == 0 && bestSDK != null)
+            if (localRC == 0 && bestSDK != null)
             {
+                pinnedSdk = true;
                 yield return bestSDK;
             }
-            else if (rc != 0)
+            else if (localRC != 0)
             {
+                rc = localRC;
                 yield break;
             }
 
             string[] paths = null;
-            rc = NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) =>
+            localRC = NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) =>
             {
                 paths = value;
             });
 
             // Errors are automatically printed to stderr. We should not continue to try to output anything if we failed.
-            if (rc != 0)
+            if (localRC != 0)
             {
+                rc = localRC;
                 yield break;
             }
 
