@@ -283,11 +283,8 @@ namespace Microsoft.Build.Locator
         }
 
         /// <summary>
-        ///     Remove assembly resolution previously registered via <see cref="RegisterInstance" />, <see cref="RegisterMSBuildPath" />, or <see cref="RegisterDefaults" />.
+        ///     This has no effect and exists only for backwards compatibility. Calling it is unnecessary.
         /// </summary>
-        /// <remarks>
-        ///     This will automatically be called once all supported assemblies are loaded into the current AppDomain and so generally is not necessary to call directly.
-        /// </remarks>
         public static void Unregister()
         {
         }
