@@ -290,19 +290,6 @@ namespace Microsoft.Build.Locator
         /// </remarks>
         public static void Unregister()
         {
-            if (!IsRegistered)
-            {
-                var error = $"{typeof(MSBuildLocator)}.{nameof(Unregister)} was called, but no MSBuild instance is registered." + Environment.NewLine +
-                            $"Ensure that {nameof(RegisterInstance)}, {nameof(RegisterMSBuildPath)}, or {nameof(RegisterDefaults)} is called before calling this method." + Environment.NewLine +
-                            $"{nameof(IsRegistered)} should be used to determine whether calling {nameof(Unregister)} is a valid operation.";
-                throw new InvalidOperationException(error);
-            }
-
-#if NET46
-            AppDomain.CurrentDomain.AssemblyResolve -= s_registeredHandler;
-#else
-            AssemblyLoadContext.Default.Resolving -= s_registeredHandler;
-#endif
         }
 
         /// <summary>
