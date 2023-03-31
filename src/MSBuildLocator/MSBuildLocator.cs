@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.ComponentModel;
 
 #if NETCOREAPP
 using System.Runtime.Loader;
@@ -285,6 +286,7 @@ namespace Microsoft.Build.Locator
         /// <summary>
         ///     This has no effect and exists only for backwards compatibility. Calling it is unnecessary.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Unregister()
         {
         }
