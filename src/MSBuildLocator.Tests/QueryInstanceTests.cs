@@ -3,7 +3,9 @@
 
 using Shouldly;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
+
 
 namespace Microsoft.Build.Locator.Tests
 {
@@ -22,5 +24,29 @@ namespace Microsoft.Build.Locator.Tests
             instance.DiscoveryType.ShouldNotBe(DiscoveryType.DotNetSdk);
 #endif
         }
+
+#if NETCOREAPP
+        [Fact]
+        public void MultipleInstancesTest()
+        {
+            var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            if (!isWindows)
+            {
+                return;
+            }
+            var queryOptions = new VisualStudioInstanceQueryOptions
+            {
+                DiscoveryTypes = DiscoveryType.VisualStudioSetup | DiscoveryType.DotNetSdk,
+            };
+            var instances = MSBuildLocator.QueryVisualStudioInstances(queryOptions).ToList();
+
+            // We should have at least one VS install and at least one .NET SDK install.
+            instances
+                .Select(inst => inst.DiscoveryType)
+                .Distinct()
+                .Count()
+                .ShouldBe(2);
+        }
+#endif
     }
 }

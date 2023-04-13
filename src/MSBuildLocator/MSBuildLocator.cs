@@ -356,16 +356,12 @@ namespace Microsoft.Build.Locator
 
         private static IEnumerable<VisualStudioInstance> GetInstances(VisualStudioInstanceQueryOptions options)
         {
-#if NET46
             var devConsole = GetDevConsoleInstance();
             if (devConsole != null)
                 yield return devConsole;
 
-    #if FEATURE_VISUALSTUDIOSETUP
             foreach (var instance in VisualStudioLocationHelper.GetInstances())
                 yield return instance;
-    #endif
-#endif
 
 #if NETCOREAPP
             foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory))
@@ -373,7 +369,6 @@ namespace Microsoft.Build.Locator
 #endif
         }
 
-#if NET46
         private static VisualStudioInstance GetDevConsoleInstance()
         {
             var path = Environment.GetEnvironmentVariable("VSINSTALLDIR");
@@ -403,6 +398,5 @@ namespace Microsoft.Build.Locator
 
             return null;
         }
-#endif
     }
 }
