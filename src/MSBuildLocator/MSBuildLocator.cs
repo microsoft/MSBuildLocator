@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 #if NETCOREAPP
@@ -353,6 +354,29 @@ namespace Microsoft.Build.Locator
 
             return sb.ToString().Equals(MSBuildPublicKeyToken, StringComparison.OrdinalIgnoreCase);
         }
+        
+#if NETCOREAPP
+        private static IntPtr HostFxrResolver(Assembly assembly, string libraryName)
+        {
+            if (libraryName != "hostfxr")
+            {
+                return IntPtr.Zero;
+            }
+
+            var path = Environment.GetEnvironmentVariable("HOSTFXR_PATH");
+            if (path == null)
+            {
+                return IntPtr.Zero;
+            }
+
+            if (!NativeLibrary.TryLoad(path, out var handle))
+            {
+                throw new Exception();
+            }
+
+            return handle;
+        }
+#endif
 
         private static IEnumerable<VisualStudioInstance> GetInstances(VisualStudioInstanceQueryOptions options)
         {
@@ -368,6 +392,7 @@ namespace Microsoft.Build.Locator
 #endif
 
 #if NETCOREAPP
+            AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly()).ResolvingUnmanagedDll += HostFxrResolver;
             foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory))
                 yield return dotnetSdk;
 #endif
