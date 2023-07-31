@@ -11,7 +11,6 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
     <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
-	  <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
 
     <Title>MSBuild Locator</Title>
     <Description>Package that assists in locating and using a copy of MSBuild installed as part of Visual Studio 2017 or higher or .NET Core SDK 2.1 or higher.</Description>
@@ -27,9 +26,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)'=='net6.0'">
-	  <!-- These package references help to resolve assemblies in runtime for platforms, where these are not loaded to AppContext by default (e.g MacOS). -->
+	 <!-- These package references help to resolve assemblies in runtime for platforms, where these are not loaded to AppContext by default (e.g MacOS). -->
     <PackageReference Include="Microsoft.NETCore.DotNetAppHost" Version="7.0.9" />
-    <PackageReference Include="runtime.$(RuntimeIdentifier).Microsoft.NETCore.DotNetAppHost" Version="7.0.9" />
   </ItemGroup>
 
   <ItemGroup>
@@ -42,6 +40,10 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <PackagePath>build\</PackagePath>
     </Content>
+	<Content Include="build\TraverseRuntimeIdentifiers.targets">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  <PackagePath>build\</PackagePath>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -50,4 +52,6 @@
     </FilesToSign>
   </ItemGroup>
 
+  <Import Project="..\..\src\MSBuildLocator\build\TraverseRuntimeIdentifiers.targets" />
+	
 </Project>
