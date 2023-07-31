@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>net46;net7.0</TargetFrameworks>
+    <TargetFrameworks>net46;net6.0</TargetFrameworks>
     <DebugType>full</DebugType>
 
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
@@ -26,7 +26,7 @@
     <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes" Version="15.0.36" PrivateAssets="all" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='net7.0'">
+  <ItemGroup Condition="'$(TargetFramework)'=='net6.0'">
 	<!-- These package references help to resolve assemblies in runtime for platforms, where these are not loaded to AppContext by default (e.g MacOS). -->
     <PackageReference Include="Microsoft.NETCore.DotNetAppHost" Version="7.0.9" />
     <PackageReference Include="runtime.$(RuntimeIdentifier).Microsoft.NETCore.DotNetAppHost" Version="7.0.9" />
