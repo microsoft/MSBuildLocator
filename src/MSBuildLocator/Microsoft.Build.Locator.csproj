@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>net46;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>net46;net7.0</TargetFrameworks>
     <DebugType>full</DebugType>
 
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
@@ -11,6 +11,7 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
     <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
+	<RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
 
     <Title>MSBuild Locator</Title>
     <Description>Package that assists in locating and using a copy of MSBuild installed as part of Visual Studio 2017 or higher or .NET Core SDK 2.1 or higher.</Description>
@@ -23,6 +24,12 @@
   <ItemGroup Condition="'$(TargetFramework)'=='net46'">
     <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.6.2115" PrivateAssets="all" />
     <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes" Version="15.0.36" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)'=='net7.0'">
+	<!-- These package references help to resolve assemblies in runtime for platforms, where these are not loaded to AppContext by default (e.g MacOS). -->
+    <PackageReference Include="Microsoft.NETCore.DotNetAppHost" Version="7.0.9" />
+    <PackageReference Include="runtime.$(RuntimeIdentifier).Microsoft.NETCore.DotNetAppHost" Version="7.0.9" />
   </ItemGroup>
 
   <ItemGroup>
