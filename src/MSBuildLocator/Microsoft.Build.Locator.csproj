@@ -5,7 +5,7 @@
     <TargetFrameworks>net46;net6.0</TargetFrameworks>
     <DebugType>full</DebugType>
 
-    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AssemblyName>Microsoft.Build.Locator</AssemblyName>
     <RootNamespace>Microsoft.Build.Locator</RootNamespace>
     <SignAssembly>true</SignAssembly>
@@ -26,8 +26,18 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)'=='net6.0'">
-	 <!-- These package references help to resolve assemblies in runtime for platforms, where these are not loaded to AppContext by default (e.g MacOS). -->
-    <PackageReference Include="Microsoft.NETCore.DotNetAppHost" Version="7.0.9" />
+    <PackageReference Include="Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
+	<!-- These package references help to resolve assemblies in runtime for platforms, where these are not loaded to AppContext by default (e.g MacOS). -->
+    <PackageReference Include="runtime.linux-x64.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
+    <PackageReference Include="runtime.linux-musl-x64.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
+    <PackageReference Include="runtime.linux-arm.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
+    <PackageReference Include="runtime.linux-arm64.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
+    <PackageReference Include="runtime.linux-bionic-arm64.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
+    <PackageReference Include="runtime.linux-musl-arm64.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
+    <PackageReference Include="runtime.linux-musl-arm.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
+    <PackageReference Include="runtime.linux-bionic-x64.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
+    <PackageReference Include="runtime.osx-x64.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
+    <PackageReference Include="runtime.arm64.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,10 +50,6 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <PackagePath>build\</PackagePath>
     </Content>
-	<Content Include="build\TraverseRuntimeIdentifiers.targets">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  <PackagePath>build\</PackagePath>
-    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -51,7 +57,5 @@
       <Authenticode>Microsoft400</Authenticode>
     </FilesToSign>
   </ItemGroup>
-
-  <Import Project="..\..\src\MSBuildLocator\build\TraverseRuntimeIdentifiers.targets" />
 	
 </Project>
