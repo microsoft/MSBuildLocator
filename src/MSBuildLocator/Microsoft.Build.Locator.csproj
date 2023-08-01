@@ -37,7 +37,7 @@
     <PackageReference Include="runtime.linux-musl-arm.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
     <PackageReference Include="runtime.linux-bionic-x64.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
     <PackageReference Include="runtime.osx-x64.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
-    <PackageReference Include="runtime.arm64.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
+    <PackageReference Include="runtime.osx-arm64.Microsoft.NETCore.DotNetAppHost" Version="7.0.9" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
