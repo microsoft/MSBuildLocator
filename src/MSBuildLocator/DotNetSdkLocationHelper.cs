@@ -96,15 +96,24 @@ namespace Microsoft.Build.Locator
             string dotnet_root = Environment.GetEnvironmentVariable("DOTNET_ROOT");
             if (!string.IsNullOrEmpty(dotnet_root))
             {
-                // DOTNET_ROOT can be a path to dotnet OR a path to the folder containing dotnet.
                 string fullPathToDotnetFromRoot = Path.Combine(dotnet_root, exeName);
                 if (File.Exists(fullPathToDotnetFromRoot))
                 {
                     dotnetPath = fullPathToDotnetFromRoot;
                 }
-                else if (File.Exists(dotnet_root))
+            }
+
+            // Second, check for the DOTNET_ROOT(x86) environment variable, as it can be there, too.
+            if (dotnetPath is null)
+            {
+                string dotnet_root_x86 = Environment.GetEnvironmentVariable("DOTNET_ROOT(x86)");
+                if (!string.IsNullOrEmpty(dotnet_root_x86))
                 {
-                    dotnetPath = dotnet_root;
+                    string fullPathToDotnetFromRoot = Path.Combine(dotnet_root_x86, exeName);
+                    if (File.Exists(fullPathToDotnetFromRoot))
+                    {
+                        dotnetPath = fullPathToDotnetFromRoot;
+                    }
                 }
             }
 
