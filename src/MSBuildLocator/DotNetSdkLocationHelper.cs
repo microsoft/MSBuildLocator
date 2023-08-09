@@ -118,17 +118,26 @@ namespace Microsoft.Build.Locator
                 foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator))
                 {
                     string filePath = Path.Combine(dir, exeName);
-                    if (File.Exists(Path.Combine(dir, exeName)))
+                    if (File.Exists(filePath))
                     {
-                        dotnetPath = filePath;
+                        if (!isWindows)
+                        {
+                            filePath = realpath(filePath) ?? filePath;
+                            if (!File.Exists(filePath))
+                            {
+                                continue;
+                            }
+                        }
+
+                        dotnetPath = dir;
                         break;
                     }
                 }
             }
 
-            if (dotnetPath != null)
+            if (dotnetPath is null)
             {
-                dotnetPath = Path.GetDirectoryName(isWindows ? dotnetPath : realpath(dotnetPath) ?? dotnetPath);
+                throw new InvalidOperationException("Could not find the dotnet executable. Is it on the PATH?");
             }
 
             string bestSDK = null;
