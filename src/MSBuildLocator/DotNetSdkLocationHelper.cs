@@ -78,6 +78,10 @@ namespace Microsoft.Build.Locator
             }
         }
 
+        /// <summary>
+        /// This native method call determines the actual location of path, including
+        /// resolving symbolic links.
+        /// </summary>
         private static string realpath(string path)
         {
             IntPtr ptr = NativeMethods.realpath(path, IntPtr.Zero);
@@ -86,33 +90,63 @@ namespace Microsoft.Build.Locator
             return result;
         }
 
+        private static string FindDotnetFromEnvironmentVariable(string environmentVariable, string exeName)
+        {
+            string dotnet_root = Environment.GetEnvironmentVariable(environmentVariable);
+            if (!string.IsNullOrEmpty(dotnet_root))
+            {
+                string fullPathToDotnetFromRoot = Path.Combine(dotnet_root, exeName);
+                if (File.Exists(fullPathToDotnetFromRoot))
+                {
+                    return realpath(fullPathToDotnetFromRoot) ?? fullPathToDotnetFromRoot;
+                }
+            }
+
+            return null;
+        }
+
         private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory)
         {
             string dotnetPath = null;
             bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
             string exeName = isWindows ? "dotnet.exe" : "dotnet";
 
-            // We will generally find the dotnet exe on the path, but on linux, it is often just a 'dotnet' symlink (possibly even to more symlinks) that we have to resolve
-            // to the real dotnet executable.
-            // This will work as often as just invoking dotnet from the command line, but we can be more confident in finding a dotnet executable by following
-            // https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md
-            // This can be done using the nethost library. We didn't do this previously, so I did not implement this extension.
-            foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator))
+            // First check for the DOTNET_ROOT environment variable, as it's often there as with, for example, dotnet format.
+            if (IntPtr.Size == 4)
             {
-                string filePath = Path.Combine(dir, exeName);
-                if (File.Exists(filePath))
-                {
-                    if (!isWindows)
-                    {
-                        filePath = realpath(filePath) ?? filePath;
-                        if (!File.Exists(filePath))
-                        {
-                            continue;
-                        }
-                    }
+                // 32-bit architecture
+                dotnetPath ??= FindDotnetFromEnvironmentVariable("DOTNET_ROOT(x86)", exeName);
+            }
+            else if (IntPtr.Size == 8)
+            {
+                // 64-bit architecture
+                dotnetPath ??= FindDotnetFromEnvironmentVariable("DOTNET_ROOT", exeName);
+            }
 
-                    dotnetPath = Path.GetDirectoryName(filePath);
-                    break;
+            if (dotnetPath is null)
+            {
+                // We will generally find the dotnet exe on the path, but on linux, it is often just a 'dotnet' symlink (possibly even to more symlinks) that we have to resolve
+                // to the real dotnet executable.
+                // This will work as often as just invoking dotnet from the command line, but we can be more confident in finding a dotnet executable by following
+                // https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md
+                // This can be done using the nethost library. We didn't do this previously, so I did not implement this extension.
+                foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator))
+                {
+                    string filePath = Path.Combine(dir, exeName);
+                    if (File.Exists(filePath))
+                    {
+                        if (!isWindows)
+                        {
+                            filePath = realpath(filePath) ?? filePath;
+                            if (!File.Exists(filePath))
+                            {
+                                continue;
+                            }
+                        }
+
+                        dotnetPath = dir;
+                        break;
+                    }
                 }
             }
 
