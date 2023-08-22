@@ -78,12 +78,31 @@ namespace Microsoft.Build.Locator
             }
         }
 
+        /// <summary>
+        /// This native method call determines the actual location of path, including
+        /// resolving symbolic links.
+        /// </summary>
         private static string realpath(string path)
         {
             IntPtr ptr = NativeMethods.realpath(path, IntPtr.Zero);
             string result = Marshal.PtrToStringAuto(ptr);
             NativeMethods.free(ptr);
             return result;
+        }
+
+        private static string FindDotnetFromEnvironmentVariable(string environmentVariable, string exeName)
+        {
+            string dotnet_root = Environment.GetEnvironmentVariable(environmentVariable);
+            if (!string.IsNullOrEmpty(dotnet_root))
+            {
+                string fullPathToDotnetFromRoot = Path.Combine(dotnet_root, exeName);
+                if (File.Exists(fullPathToDotnetFromRoot))
+                {
+                    return realpath(fullPathToDotnetFromRoot) ?? fullPathToDotnetFromRoot;
+                }
+            }
+
+            return null;
         }
 
         private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory)
@@ -93,28 +112,15 @@ namespace Microsoft.Build.Locator
             string exeName = isWindows ? "dotnet.exe" : "dotnet";
 
             // First check for the DOTNET_ROOT environment variable, as it's often there as with, for example, dotnet format.
-            string dotnet_root = Environment.GetEnvironmentVariable("DOTNET_ROOT");
-            if (!string.IsNullOrEmpty(dotnet_root))
+            if (IntPtr.Size == 4)
             {
-                string fullPathToDotnetFromRoot = Path.Combine(dotnet_root, exeName);
-                if (File.Exists(fullPathToDotnetFromRoot))
-                {
-                    dotnetPath = fullPathToDotnetFromRoot;
-                }
+                // 32-bit architecture
+                dotnetPath ??= FindDotnetFromEnvironmentVariable("DOTNET_ROOT(x86)", exeName);
             }
-
-            // Second, check for the DOTNET_ROOT(x86) environment variable, as it can be there, too.
-            if (dotnetPath is null)
+            else if (IntPtr.Size == 8)
             {
-                string dotnet_root_x86 = Environment.GetEnvironmentVariable("DOTNET_ROOT(x86)");
-                if (!string.IsNullOrEmpty(dotnet_root_x86))
-                {
-                    string fullPathToDotnetFromRoot = Path.Combine(dotnet_root_x86, exeName);
-                    if (File.Exists(fullPathToDotnetFromRoot))
-                    {
-                        dotnetPath = fullPathToDotnetFromRoot;
-                    }
-                }
+                // 64-bit architecture
+                dotnetPath ??= FindDotnetFromEnvironmentVariable("DOTNET_ROOT", exeName);
             }
 
             if (dotnetPath is null)
