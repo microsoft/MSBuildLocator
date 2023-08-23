@@ -18,9 +18,8 @@ namespace Microsoft.Build.Locator
     internal static class DotNetSdkLocationHelper
     {
         private static readonly Regex VersionRegex = new Regex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline);
+        private static readonly Regex SdkRegex = new Regex(@"(\S+) \[(.*?)]$", RegexOptions.Multiline);
         private static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        private static readonly string ExeName = IsWindows ? "dotnet.exe" : "dotnet";
-        private static readonly string? DotnetPath = ResolveDotnetPath();
 
         static DotNetSdkLocationHelper() => LoadHostFxr();
 
@@ -69,7 +68,11 @@ namespace Microsoft.Build.Locator
             }
         }
 
-        private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory)
+        /// <summary>
+        /// This native method call determines the actual location of path, including
+        /// resolving symbolic links.
+        /// </summary>
+        private static string realpath(string path)
         {
             string? bestSDK = GetSdkFromGlobalSettings(workingDirectory);
             if (!string.IsNullOrEmpty(bestSDK))
@@ -97,34 +100,80 @@ namespace Microsoft.Build.Locator
             }
         }
 
-        private static IntPtr HostFxrResolver(Assembly assembly, string libraryName)
+        private static string FindDotnetFromEnvironmentVariable(string environmentVariable, string exeName)
         {
-            var hostFxrLibName = "libhostfxr.dylib";
-
-            if (!hostFxrLibName.Equals(libraryName, StringComparison.Ordinal) || string.IsNullOrEmpty(DotnetPath))
-                return IntPtr.Zero;
-
-            var hostFxrRoot = Path.Combine(DotnetPath, "host", "fxr");
-            if (Directory.Exists(hostFxrRoot))
+            string dotnet_root = Environment.GetEnvironmentVariable(environmentVariable);
+            if (!string.IsNullOrEmpty(dotnet_root))
             {
-                // Agreed to load hostfxr from the highest version
-                var hostFxrAssemblyDirectory = Directory.GetDirectories(hostFxrRoot)
-                    .OrderByDescending(d => d)
-                    .FirstOrDefault();
-
-                if (hostFxrAssemblyDirectory != null)
+                string fullPathToDotnetFromRoot = Path.Combine(dotnet_root, exeName);
+                if (File.Exists(fullPathToDotnetFromRoot))
                 {
-                    var hostfxrAssembly = Directory.GetFiles(hostFxrAssemblyDirectory)
-                        .Where(filePath => hostFxrLibName.Equals(libraryName, StringComparison.Ordinal))
-                        .FirstOrDefault();
+                    if (!IsWindows)
+                    {
+                        fullPathToDotnetFromRoot = realpath(fullPathToDotnetFromRoot) ?? fullPathToDotnetFromRoot;
+                        return File.Exists(fullPathToDotnetFromRoot) ? Path.GetDirectoryName(fullPathToDotnetFromRoot) : null;
+                    }
 
-                    if (hostfxrAssembly != null)
-                        return NativeLibrary.TryLoad(hostfxrAssembly, out var handle) ? handle : IntPtr.Zero;
+                    return dotnet_root;
                 }
             }
 
-            return IntPtr.Zero;
+            return null;
         }
+
+        private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory)
+        {
+            string dotnetPath = null;
+            string exeName = IsWindows ? "dotnet.exe" : "dotnet";
+
+            // First check for the DOTNET_ROOT environment variable, as it's often there as with, for example, dotnet format.
+            if (IntPtr.Size == 4)
+            {
+                // 32-bit architecture
+                dotnetPath ??= FindDotnetFromEnvironmentVariable("DOTNET_ROOT(x86)", exeName);
+            }
+            else if (IntPtr.Size == 8)
+            {
+                // 64-bit architecture
+                dotnetPath ??= FindDotnetFromEnvironmentVariable("DOTNET_ROOT", exeName);
+            }
+
+            if (dotnetPath is null)
+            {
+                // We will generally find the dotnet exe on the path, but on linux, it is often just a 'dotnet' symlink (possibly even to more symlinks) that we have to resolve
+                // to the real dotnet executable.
+                // This will work as often as just invoking dotnet from the command line, but we can be more confident in finding a dotnet executable by following
+                // https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md
+                // This can be done using the nethost library. We didn't do this previously, so I did not implement this extension.
+                foreach (string dir in Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator))
+                {
+                    string filePath = Path.Combine(dir, exeName);
+                    if (File.Exists(filePath))
+                    {
+                        if (!IsWindows)
+                        {
+                            filePath = realpath(filePath) ?? filePath;
+                            if (File.Exists(filePath))
+                            {
+                                dotnetPath = Path.GetDirectoryName(filePath);
+                                break;
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+
+                        dotnetPath = dir;
+                        break;
+                    }
+                }
+            }
+
+            if (dotnetPath is null)
+            {
+                throw new InvalidOperationException("Could not find the dotnet executable. Is it on the PATH?");
+            }
 
         private static string SdkResolutionExceptionMessage(string methodName) => $"Failed to find all versions of .NET Core MSBuild. Call to {methodName}. There may be more details in stderr.";
         
