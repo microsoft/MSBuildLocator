@@ -4,7 +4,7 @@
       <MSBuildPackagesWithoutPrivateAssets
         Include="@(PackageReference)"
         Condition="
-          '%(PackageReference.ExcludeAssets)' != 'runtime' and
+          !'%(PackageReference.ExcludeAssets)'.Contains('runtime') and
           (
             '%(PackageReference.Identity)' == 'Microsoft.Build' or
             '%(PackageReference.Identity)' == 'Microsoft.Build.Framework' or
