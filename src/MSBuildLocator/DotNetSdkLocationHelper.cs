@@ -17,7 +17,7 @@ namespace Microsoft.Build.Locator
         private static readonly Regex DotNetBasePathRegex = new Regex("Base Path:(.*)$", RegexOptions.Multiline);
         private static readonly Regex VersionRegex = new Regex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline);
         private static readonly Regex SdkRegex = new Regex(@"(\S+) \[(.*?)]$", RegexOptions.Multiline);
-        private static bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        private static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
         public static VisualStudioInstance GetInstance(string dotNetSdkPath)
         {            
@@ -102,7 +102,7 @@ namespace Microsoft.Build.Locator
                     if (!IsWindows)
                     {
                         fullPathToDotnetFromRoot = realpath(fullPathToDotnetFromRoot) ?? fullPathToDotnetFromRoot;
-                        return File.Exists(fullPathToDotnetFromRoot) ? dotnet_root : null;
+                        return File.Exists(fullPathToDotnetFromRoot) ? Path.GetDirectoryName(fullPathToDotnetFromRoot) : null;
                     }
 
                     return dotnet_root;
@@ -144,7 +144,12 @@ namespace Microsoft.Build.Locator
                         if (!IsWindows)
                         {
                             filePath = realpath(filePath) ?? filePath;
-                            if (!File.Exists(filePath))
+                            if (File.Exists(filePath))
+                            {
+                                dotnetPath = Path.GetDirectoryName(filePath);
+                                break;
+                            }
+                            else
                             {
                                 continue;
                             }
