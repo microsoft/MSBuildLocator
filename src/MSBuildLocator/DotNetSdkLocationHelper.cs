@@ -17,6 +17,7 @@ namespace Microsoft.Build.Locator
         private static readonly Regex DotNetBasePathRegex = new Regex("Base Path:(.*)$", RegexOptions.Multiline);
         private static readonly Regex VersionRegex = new Regex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline);
         private static readonly Regex SdkRegex = new Regex(@"(\S+) \[(.*?)]$", RegexOptions.Multiline);
+        private static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
         public static VisualStudioInstance GetInstance(string dotNetSdkPath)
         {            
@@ -98,7 +99,13 @@ namespace Microsoft.Build.Locator
                 string fullPathToDotnetFromRoot = Path.Combine(dotnet_root, exeName);
                 if (File.Exists(fullPathToDotnetFromRoot))
                 {
-                    return realpath(fullPathToDotnetFromRoot) ?? fullPathToDotnetFromRoot;
+                    if (!IsWindows)
+                    {
+                        fullPathToDotnetFromRoot = realpath(fullPathToDotnetFromRoot) ?? fullPathToDotnetFromRoot;
+                        return File.Exists(fullPathToDotnetFromRoot) ? Path.GetDirectoryName(fullPathToDotnetFromRoot) : null;
+                    }
+
+                    return dotnet_root;
                 }
             }
 
@@ -108,8 +115,7 @@ namespace Microsoft.Build.Locator
         private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory)
         {
             string dotnetPath = null;
-            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-            string exeName = isWindows ? "dotnet.exe" : "dotnet";
+            string exeName = IsWindows ? "dotnet.exe" : "dotnet";
 
             // First check for the DOTNET_ROOT environment variable, as it's often there as with, for example, dotnet format.
             if (IntPtr.Size == 4)
@@ -135,10 +141,15 @@ namespace Microsoft.Build.Locator
                     string filePath = Path.Combine(dir, exeName);
                     if (File.Exists(filePath))
                     {
-                        if (!isWindows)
+                        if (!IsWindows)
                         {
                             filePath = realpath(filePath) ?? filePath;
-                            if (!File.Exists(filePath))
+                            if (File.Exists(filePath))
+                            {
+                                dotnetPath = Path.GetDirectoryName(filePath);
+                                break;
+                            }
+                            else
                             {
                                 continue;
                             }
