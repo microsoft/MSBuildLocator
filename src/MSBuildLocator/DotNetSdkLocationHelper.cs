@@ -3,7 +3,6 @@
 
 #if NETCOREAPP
 
-using NuGet.Versioning;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -50,7 +49,7 @@ namespace Microsoft.Build.Locator
                 !int.TryParse(versionMatch.Groups[3].Value, out int patch))
             {
                 return null;
-            }   
+            }
 
             // Components of the SDK often have dependencies on the runtime they shipped with, including that several tasks that shipped
             // in the .NET 5 SDK rely on the .NET 5.0 runtime. Assuming the runtime that shipped with a particular SDK has the same version,
@@ -118,6 +117,7 @@ namespace Microsoft.Build.Locator
 
         private static void ModifyUnmanagedDllResolver(Action<AssemblyLoadContext> resolverAction)
         {
+            // For Windows hostfxr is loaded in the process.
             if (!IsWindows)
             {
                 var loadContext = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
@@ -133,7 +133,7 @@ namespace Microsoft.Build.Locator
             var hostFxrLibName = "libhostfxr";
             var libExtention = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "dylib" : "so";
 
-            if (!hostFxrLibName.Equals(libraryName, StringComparison.OrdinalIgnoreCase))
+            if (!hostFxrLibName.Equals(libraryName))
             {
                 return IntPtr.Zero;
             }
@@ -141,15 +141,16 @@ namespace Microsoft.Build.Locator
             var hostFxrRoot = Path.Combine(DotnetPath.Value, "host", "fxr");
             if (Directory.Exists(hostFxrRoot))
             {
-                // Agreed to load hostfxr from the highest version
+                var versionParser = new SemanticVersionParser();
+                // Load hostfxr from the highest version, because it should be backward-compatible
                 var hostFxrAssemblyDirectory = Directory.GetDirectories(hostFxrRoot)
-                            .Select(str => NuGetVersion.Parse(str))
+                            .Select(str => versionParser.TryParse(str, out var version) ? version : null)
                             .Max();
 
-                if (hostFxrAssemblyDirectory != null && !string.IsNullOrEmpty(hostFxrAssemblyDirectory.OriginalVersion))
+                if (hostFxrAssemblyDirectory != null && !string.IsNullOrEmpty(hostFxrAssemblyDirectory.OriginalValue))
                 {
-                    var hostfxrAssembly = Directory.GetFiles(hostFxrAssemblyDirectory.OriginalVersion)
-                        .Where(filePath => filePath.Equals(Path.Combine(hostFxrLibName, libExtention), StringComparison.OrdinalIgnoreCase))
+                    var hostfxrAssembly = Directory.GetFiles(hostFxrAssemblyDirectory.OriginalValue)
+                        .Where(filePath => filePath.Equals(Path.Combine(hostFxrLibName, libExtention)))
                         .FirstOrDefault();
 
                     if (hostfxrAssembly != null)
