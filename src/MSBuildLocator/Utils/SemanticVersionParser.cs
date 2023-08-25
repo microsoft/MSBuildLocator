@@ -1,17 +1,24 @@
-﻿#if NETCOREAPP
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+#if NETCOREAPP
 
 using System;
 using System.Linq;
 
 namespace Microsoft.Build.Locator
 {
-    internal class SemanticVersionParser
+    /// <summary>
+    /// Converts string in its semantic version.
+    /// The basic parser logic is taken from https://github.com/NuGetArchive/NuGet.Versioning/releases/tag/rc-preview1.
+    /// </summary>
+    internal static class SemanticVersionParser
     {
         /// <summary>
         /// Parse a version string
         /// </summary>
         /// <returns>false if the version wasn't parsed</returns>
-        public bool TryParse(string value, out SemanticVersion version)
+        public static bool TryParse(string value, out SemanticVersion version)
         {
             version = null;
 
@@ -56,7 +63,7 @@ namespace Microsoft.Build.Locator
             return false;
         }
 
-        private bool IsLetterOrDigitOrDash(char c)
+        private static bool IsLetterOrDigitOrDash(char c)
         {
             int x = (int)c;
 
@@ -64,9 +71,9 @@ namespace Microsoft.Build.Locator
             return (x >= 48 && x <= 57) || (x >= 65 && x <= 90) || (x >= 97 && x <= 122) || x == 45;
         }
 
-        private bool IsValidPart(string s, bool allowLeadingZeros) => IsValidPart(s.ToCharArray(), allowLeadingZeros);
+        private static bool IsValidPart(string s, bool allowLeadingZeros) => IsValidPart(s.ToCharArray(), allowLeadingZeros);
 
-        private bool IsValidPart(char[] chars, bool allowLeadingZeros)
+        private static bool IsValidPart(char[] chars, bool allowLeadingZeros)
         {
             bool result = true;
 
@@ -94,7 +101,7 @@ namespace Microsoft.Build.Locator
         /// <summary>
         /// Parse the version string into version/release
         /// </summary>
-        private (string Version, string[] ReleaseLabels) ParseSections(string value)
+        private static (string Version, string[] ReleaseLabels) ParseSections(string value)
         {
             string versionString = null;
             string[] releaseLabels = null;
@@ -142,7 +149,7 @@ namespace Microsoft.Build.Locator
             return (versionString, releaseLabels);
         }
 
-        private Version NormalizeVersionValue(Version version)
+        private static Version NormalizeVersionValue(Version version)
         {
             Version normalized = version;
 

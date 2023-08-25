@@ -141,17 +141,14 @@ namespace Microsoft.Build.Locator
             var hostFxrRoot = Path.Combine(DotnetPath.Value, "host", "fxr");
             if (Directory.Exists(hostFxrRoot))
             {
-                var versionParser = new SemanticVersionParser();
                 // Load hostfxr from the highest version, because it should be backward-compatible
                 var hostFxrAssemblyDirectory = Directory.GetDirectories(hostFxrRoot)
-                            .Select(str => versionParser.TryParse(str, out var version) ? version : null)
-                            .Max();
+                            .Max(str => SemanticVersionParser.TryParse(str, out var version) ? version : null);
 
                 if (hostFxrAssemblyDirectory != null && !string.IsNullOrEmpty(hostFxrAssemblyDirectory.OriginalValue))
                 {
                     var hostfxrAssembly = Directory.GetFiles(hostFxrAssemblyDirectory.OriginalValue)
-                        .Where(filePath => filePath.Equals(Path.Combine(hostFxrLibName, libExtention)))
-                        .FirstOrDefault();
+                        .FirstOrDefault(filePath => filePath.Equals(Path.Combine(hostFxrLibName, libExtention)));
 
                     if (hostfxrAssembly != null)
                     {

@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 
 namespace Microsoft.Build.Locator
@@ -8,10 +11,7 @@ namespace Microsoft.Build.Locator
         /// <summary>
         /// Determines if both versions are equal.
         /// </summary>
-        public bool Equals(SemanticVersion x, SemanticVersion y)
-        {
-            return Compare(x, y) == 0;
-        }
+        public bool Equals(SemanticVersion x, SemanticVersion y) => Compare(x, y) == 0;
 
         /// <summary>
         /// Compare versions.
