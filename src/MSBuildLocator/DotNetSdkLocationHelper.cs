@@ -131,7 +131,7 @@ namespace Microsoft.Build.Locator
         private static IntPtr HostFxrResolver(Assembly assembly, string libraryName)
         {
             var hostFxrLibName = "libhostfxr";
-            var libExtention = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "dylib" : "so";
+            var libExtension = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "dylib" : "so";
 
             if (!hostFxrLibName.Equals(libraryName))
             {
@@ -147,8 +147,7 @@ namespace Microsoft.Build.Locator
 
                 if (hostFxrAssemblyDirectory != null && !string.IsNullOrEmpty(hostFxrAssemblyDirectory.OriginalValue))
                 {
-                    var hostfxrAssembly = Directory.GetFiles(hostFxrAssemblyDirectory.OriginalValue)
-                        .FirstOrDefault(filePath => filePath.Equals(Path.Combine(hostFxrLibName, libExtention)));
+                    var hostfxrAssembly = Path.Combine(hostFxrAssemblyDirectory.OriginalValue, Path.ChangeExtension(hostFxrLibName, libExtension));
 
                     if (hostfxrAssembly != null)
                     {
