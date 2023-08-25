@@ -1,34 +1,34 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
 
-namespace Microsoft.Build.Locator
+namespace Microsoft.Build.Locator.Utils
 {
-    internal sealed class VersionComparer 
+    internal sealed class VersionComparer
     {
         /// <summary>
         /// Determines if both versions are equal.
         /// </summary>
-        public bool Equals(SemanticVersion x, SemanticVersion y) => Compare(x, y) == 0;
+        public static bool Equals(SemanticVersion x, SemanticVersion y) => Compare(x, y) == 0;
 
         /// <summary>
         /// Compare versions.
         /// </summary>
-        public int Compare(SemanticVersion x, SemanticVersion y)
+        public static int Compare(SemanticVersion x, SemanticVersion y)
         {
-            if (Object.ReferenceEquals(x, y))
+            if (ReferenceEquals(x, y))
             {
                 return 0;
             }
 
-            if (Object.ReferenceEquals(y, null))
+            if (y is null)
             {
                 return 1;
             }
 
-            if (Object.ReferenceEquals(x, null))
+            if (x is null)
             {
                 return -1;
             }
@@ -40,7 +40,7 @@ namespace Microsoft.Build.Locator
                 if (result != 0)
                 {
                     return result;
-                }                    
+                }
 
                 result = x.Minor.CompareTo(y.Minor);
                 if (result != 0)
@@ -96,20 +96,20 @@ namespace Microsoft.Build.Locator
                 if (!aExists && bExists)
                 {
                     return -1;
-                } 
+                }
 
                 if (aExists && !bExists)
                 {
                     return 1;
                 }
-                    
+
                 result = CompareRelease(a.Current, b.Current);
 
                 if (result != 0)
                 {
                     return result;
                 }
-                    
+
                 aExists = a.MoveNext();
                 bExists = b.MoveNext();
             }
@@ -126,8 +126,8 @@ namespace Microsoft.Build.Locator
             int result;
 
             // check if the identifiers are numeric
-            bool v1IsNumeric = Int32.TryParse(version1, out int version1Num);
-            bool v2IsNumeric = Int32.TryParse(version2, out int version2Num);
+            bool v1IsNumeric = int.TryParse(version1, out int version1Num);
+            bool v2IsNumeric = int.TryParse(version2, out int version2Num);
 
             // if both are numeric compare them as numbers
             if (v1IsNumeric && v2IsNumeric)

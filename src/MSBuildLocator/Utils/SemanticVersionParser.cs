@@ -1,10 +1,11 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 #if NETCOREAPP
 
 using System;
 using System.Linq;
+using Microsoft.Build.Locator.Utils;
 
 namespace Microsoft.Build.Locator
 {
@@ -24,7 +25,7 @@ namespace Microsoft.Build.Locator
 
             if (value != null)
             {
-                var (versionString, releaseLabels) = ParseSections(value);
+                (string versionString, string[] releaseLabels) = ParseSections(value);
 
                 if (Version.TryParse(versionString, out Version systemVersion))
                 {

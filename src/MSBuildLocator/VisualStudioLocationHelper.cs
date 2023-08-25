@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // Taken from https://github.com/Microsoft/msbuild/blob/6851538897f5d7b08024a6d8435bc44be5869e53/src/Shared/VisualStudioLocationHelper.cs
 
 #if FEATURE_VISUALSTUDIOSETUP
@@ -18,7 +19,7 @@ namespace Microsoft.Build.Locator
     /// </summary>
     internal class VisualStudioLocationHelper
     {
-        private const int REGDB_E_CLASSNOTREG = unchecked((int) 0x80040154);
+        private const int REGDB_E_CLASSNOTREG = unchecked((int)0x80040154);
 
         /// <summary>
         ///     Query the Visual Studio setup API to get instances of Visual Studio installed
@@ -32,8 +33,8 @@ namespace Microsoft.Build.Locator
             try
             {
                 // This code is not obvious. See the sample (link above) for reference.
-                var query = (ISetupConfiguration2) GetQuery();
-                var e = query.EnumAllInstances();
+                var query = (ISetupConfiguration2)GetQuery();
+                IEnumSetupInstances e = query.EnumAllInstances();
 
                 int fetched;
                 var instances = new ISetupInstance[1];
@@ -41,13 +42,18 @@ namespace Microsoft.Build.Locator
                 {
                     // Call e.Next to query for the next instance (single item or nothing returned).
                     e.Next(1, instances, out fetched);
-                    if (fetched <= 0) continue;
+                    if (fetched <= 0)
+                    {
+                        continue;
+                    }
 
-                    var instance = (ISetupInstance2) instances[0];
+                    var instance = (ISetupInstance2)instances[0];
                     InstanceState state = instance.GetState();
 
                     if (!Version.TryParse(instance.GetInstallationVersion(), out Version version))
+                    {
                         continue;
+                    }
 
                     // If the install was complete and a valid version, consider it.
                     if (state == InstanceState.Complete ||
@@ -96,19 +102,15 @@ namespace Microsoft.Build.Locator
             catch (COMException ex) when (ex.ErrorCode == REGDB_E_CLASSNOTREG)
             {
                 // Try to get the class object using app-local call.
-                ISetupConfiguration query;
-                var result = GetSetupConfiguration(out query, IntPtr.Zero);
+                int result = GetSetupConfiguration(out ISetupConfiguration query, IntPtr.Zero);
 
-                if (result < 0)
-                    throw new COMException($"Failed to get {nameof(query)}", result);
-
-                return query;
+                return result < 0 ? throw new COMException($"Failed to get {nameof(query)}", result) : query;
             }
         }
 
         [DllImport("Microsoft.VisualStudio.Setup.Configuration.Native.dll", ExactSpelling = true, PreserveSig = true)]
         private static extern int GetSetupConfiguration(
-            [MarshalAs(UnmanagedType.Interface)] [Out] out ISetupConfiguration configuration,
+            [MarshalAs(UnmanagedType.Interface)][Out] out ISetupConfiguration configuration,
             IntPtr reserved);
     }
 }

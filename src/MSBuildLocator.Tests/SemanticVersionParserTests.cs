@@ -1,8 +1,9 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 #if NETCOREAPP
 
+using Microsoft.Build.Locator.Utils;
 using Shouldly;
 using System.Linq;
 using Xunit;
@@ -14,61 +15,61 @@ namespace Microsoft.Build.Locator.Tests
         [Fact]
         public void TryParseTest_ReleaseVersion()
         {
-            var version = "7.0.333";
+            string version = "7.0.333";
 
-            var isParsed = SemanticVersionParser.TryParse(version, out var parsedVerion);
+            bool isParsed = SemanticVersionParser.TryParse(version, out SemanticVersion parsedVersion);
 
-            parsedVerion.ShouldNotBeNull();
+            _ = parsedVersion.ShouldNotBeNull();
             isParsed.ShouldBeTrue();
-            parsedVerion.Major.ShouldBe(7);
-            parsedVerion.Minor.ShouldBe(0);
-            parsedVerion.Patch.ShouldBe(333);
-            parsedVerion.ReleaseLabels.ShouldBeEmpty();
+            parsedVersion.Major.ShouldBe(7);
+            parsedVersion.Minor.ShouldBe(0);
+            parsedVersion.Patch.ShouldBe(333);
+            parsedVersion.ReleaseLabels.ShouldBeEmpty();
         }
 
         [Fact]
         public void TryParseTest_PreviewVersion()
         {
-            var version = "8.0.0-preview.6.23329.7";
+            string version = "8.0.0-preview.6.23329.7";
 
-            var isParsed = SemanticVersionParser.TryParse(version, out var parsedVerion);
+            bool isParsed = SemanticVersionParser.TryParse(version, out SemanticVersion parsedVersion);
 
-            parsedVerion.ShouldNotBeNull();
+            _ = parsedVersion.ShouldNotBeNull();
             isParsed.ShouldBeTrue();
-            parsedVerion.Major.ShouldBe(8);
-            parsedVerion.Minor.ShouldBe(0);
-            parsedVerion.Patch.ShouldBe(0);
-            parsedVerion.ReleaseLabels.ShouldBe(new[] { "preview", "6", "23329", "7" });
+            parsedVersion.Major.ShouldBe(8);
+            parsedVersion.Minor.ShouldBe(0);
+            parsedVersion.Patch.ShouldBe(0);
+            parsedVersion.ReleaseLabels.ShouldBe(new[] { "preview", "6", "23329", "7" });
         }
 
         [Fact]
         public void TryParseTest_InvalidInput_LeadingZero()
         {
-            var version = "0.0-preview.6";
+            string version = "0.0-preview.6";
 
-            var isParsed = SemanticVersionParser.TryParse(version, out var parsedVerion);
+            bool isParsed = SemanticVersionParser.TryParse(version, out SemanticVersion parsedVersion);
 
-            Assert.Null(parsedVerion);
+            Assert.Null(parsedVersion);
             isParsed.ShouldBeFalse();
         }
 
         [Fact]
         public void TryParseTest_InvalidInput_FourPartsVersion()
         {
-            var version = "5.0.3.4";
+            string version = "5.0.3.4";
 
-            var isParsed = SemanticVersionParser.TryParse(version, out var parsedVerion);
+            bool isParsed = SemanticVersionParser.TryParse(version, out SemanticVersion parsedVersion);
 
-            Assert.Null(parsedVerion);
+            Assert.Null(parsedVersion);
             isParsed.ShouldBeFalse();
         }
 
         [Fact]
         public void VersionSortingTest_WithPreview()
         {
-            var versions = new[] { "7.0.7", "8.0.0-preview.6.23329.7", "8.0.0-preview.3.23174.8" };
+            string[] versions = new[] { "7.0.7", "8.0.0-preview.6.23329.7", "8.0.0-preview.3.23174.8" };
 
-            var maxVersion = versions.Select(v => SemanticVersionParser.TryParse(v, out var parsedVerion) ? parsedVerion : null).Max();
+            SemanticVersion maxVersion = versions.Select(v => SemanticVersionParser.TryParse(v, out SemanticVersion parsedVersion) ? parsedVersion : null).Max();
 
             maxVersion.OriginalValue.ShouldBe("8.0.0-preview.6.23329.7");
         }
@@ -76,9 +77,9 @@ namespace Microsoft.Build.Locator.Tests
         [Fact]
         public void VersionSortingTest_ReleaseOnly()
         {
-            var versions = new[] { "7.0.7", "3.7.2", "10.0.0" };
+            string[] versions = new[] { "7.0.7", "3.7.2", "10.0.0" };
 
-            var maxVersion = versions.Max(v => SemanticVersionParser.TryParse(v, out var parsedVerion) ? parsedVerion : null);
+            SemanticVersion maxVersion = versions.Max(v => SemanticVersionParser.TryParse(v, out SemanticVersion parsedVersion) ? parsedVersion : null);
 
             maxVersion.OriginalValue.ShouldBe("10.0.0");
         }
@@ -86,9 +87,9 @@ namespace Microsoft.Build.Locator.Tests
         [Fact]
         public void VersionSortingTest_WithInvalidFolderNames()
         {
-            var versions = new[] { "7.0.7", "3.7.2", "dummy", "5.7.8.9" };
+            string[] versions = new[] { "7.0.7", "3.7.2", "dummy", "5.7.8.9" };
 
-            var maxVersion = versions.Max(v => SemanticVersionParser.TryParse(v, out var parsedVerion) ? parsedVerion : null);
+            SemanticVersion maxVersion = versions.Max(v => SemanticVersionParser.TryParse(v, out SemanticVersion parsedVersion) ? parsedVersion : null);
 
             maxVersion.OriginalValue.ShouldBe("7.0.7");
         }
@@ -96,9 +97,9 @@ namespace Microsoft.Build.Locator.Tests
         [Fact]
         public void VersionSortingTest_WithAllInvalidFolderNames()
         {
-            var versions = new[] { "dummy", "5.7.8.9" };
+            string[] versions = new[] { "dummy", "5.7.8.9" };
 
-            var maxVersion = versions.Max(v => SemanticVersionParser.TryParse(v, out var parsedVerion) ? parsedVerion : null);
+            SemanticVersion maxVersion = versions.Max(v => SemanticVersionParser.TryParse(v, out SemanticVersion parsedVersion) ? parsedVersion : null);
 
             maxVersion.ShouldBeNull();
         }
