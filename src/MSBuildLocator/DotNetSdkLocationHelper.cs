@@ -211,6 +211,8 @@ namespace Microsoft.Build.Locator
                 throw new InvalidOperationException("Could not find the dotnet executable. Is it set on the DOTNET_ROOT?");
             }
 
+            SetEnvironmentVariableIfEmpty("DOTNET_HOST_PATH", dotnetPath);
+
             return dotnetPath;
         }
 
@@ -283,6 +285,14 @@ namespace Microsoft.Build.Locator
             string? dotnetPath = Environment.GetEnvironmentVariable(environmentVariable);
             
             return string.IsNullOrEmpty(dotnetPath) ? null : ValidatePath(dotnetPath);
+        }
+
+        private static void SetEnvironmentVariableIfEmpty(string name, string value)
+        {
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(name)))
+            {
+                Environment.SetEnvironmentVariable(name, value);
+            }
         }
 
         private static string? ValidatePath(string dotnetPath)
