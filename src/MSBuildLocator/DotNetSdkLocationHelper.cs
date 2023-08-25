@@ -147,11 +147,11 @@ namespace Microsoft.Build.Locator
 
                 if (hostFxrAssemblyDirectory != null && !string.IsNullOrEmpty(hostFxrAssemblyDirectory.OriginalValue))
                 {
-                    var hostfxrAssembly = Path.Combine(hostFxrAssemblyDirectory.OriginalValue, Path.ChangeExtension(hostFxrLibName, libExtension));
+                    var hostFxrAssembly = Path.Combine(hostFxrAssemblyDirectory.OriginalValue, Path.ChangeExtension(hostFxrLibName, libExtension));
 
-                    if (hostfxrAssembly != null)
+                    if (File.Exists(hostFxrAssembly))
                     {
-                        return NativeLibrary.TryLoad(hostfxrAssembly, out var handle) ? handle : IntPtr.Zero;
+                        return NativeLibrary.TryLoad(hostFxrAssembly, out var handle) ? handle : IntPtr.Zero;
                     }
                 }
             }
