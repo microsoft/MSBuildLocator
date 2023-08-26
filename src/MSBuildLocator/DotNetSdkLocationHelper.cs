@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -130,24 +131,48 @@ namespace Microsoft.Build.Locator
 
         private static IntPtr HostFxrResolver(Assembly assembly, string libraryName)
         {
+            Console.Error.WriteLine($"Try to load native library {libraryName}");
+
             var hostFxrLibName = "libhostfxr";
             var libExtension = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "dylib" : "so";
 
-            if (!hostFxrLibName.Equals(libraryName))
+            // the DllImport hardcoded the name as hostfxr.
+            if (!hostFxrLibName.Equals(libraryName, StringComparison.Ordinal) && !libraryName.Equals("hostfxr", StringComparison.Ordinal))
             {
                 return IntPtr.Zero;
             }
 
-            var hostFxrRoot = Path.Combine(DotnetPath.Value, "host", "fxr");
+            string? dotnetFolderPath = Path.GetDirectoryName(DotnetPath.Value);
+            if (string.IsNullOrEmpty(dotnetFolderPath))
+            {
+                Console.Error.WriteLine($"Cannot find dotnet on the machine");
+                return IntPtr.Zero;
+            }
+
+            var hostFxrRoot = Path.Combine(dotnetFolderPath, "host", "fxr");
+            Console.Error.WriteLine($"Start to search native library inside: {hostFxrRoot}");
+
             if (Directory.Exists(hostFxrRoot))
             {
-                // Load hostfxr from the highest version, because it should be backward-compatible
-                var hostFxrAssemblyDirectory = Directory.GetDirectories(hostFxrRoot)
-                            .Max(str => SemanticVersionParser.TryParse(str, out var version) ? version : null);
-
-                if (hostFxrAssemblyDirectory != null && !string.IsNullOrEmpty(hostFxrAssemblyDirectory.OriginalValue))
+                var fileEnumerable = new FileSystemEnumerable<SemanticVersion?>(
+                    directory: hostFxrRoot,
+                    transform: static (ref FileSystemEntry entry) =>
+                    {
+                        Console.Error.WriteLine($"Child folder: {entry.FileName}");
+                        return SemanticVersionParser.TryParse(entry.FileName.ToString(), out var version) ? version : null;
+                    })
                 {
-                    var hostFxrAssembly = Path.Combine(hostFxrAssemblyDirectory.OriginalValue, Path.ChangeExtension(hostFxrLibName, libExtension));
+                    ShouldIncludePredicate = static (ref FileSystemEntry entry) => entry.IsDirectory
+                };
+
+                // Load hostfxr from the highest version, because it should be backward-compatible
+                SemanticVersion? hostFxrVersion = fileEnumerable.Max();
+
+                Console.Error.WriteLine($"Pick up one in {hostFxrVersion}");
+                if (hostFxrVersion is not null)
+                {
+                    var hostFxrAssembly = Path.Combine(hostFxrRoot, hostFxrVersion.OriginalValue, Path.ChangeExtension(hostFxrLibName, libExtension));
+                    Console.Error.WriteLine($"Resolve to native library {hostFxrAssembly}");
 
                     if (File.Exists(hostFxrAssembly))
                     {
