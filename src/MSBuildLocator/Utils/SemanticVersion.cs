@@ -74,8 +74,7 @@ namespace Microsoft.Build.Locator
         /// </summary>
         public int CompareTo(SemanticVersion other)
         {
-            var comparer = new VersionComparer();
-            return comparer.Compare(this, other);
+            return VersionComparer.Compare(this, other);
         }
     }
 }

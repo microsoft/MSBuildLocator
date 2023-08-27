@@ -6,17 +6,17 @@ using System.Collections.Generic;
 
 namespace Microsoft.Build.Locator
 {
-    internal sealed class VersionComparer 
+    internal static class VersionComparer 
     {
         /// <summary>
         /// Determines if both versions are equal.
         /// </summary>
-        public bool Equals(SemanticVersion x, SemanticVersion y) => Compare(x, y) == 0;
+        public static bool Equals(SemanticVersion x, SemanticVersion y) => Compare(x, y) == 0;
 
         /// <summary>
         /// Compare versions.
         /// </summary>
-        public int Compare(SemanticVersion x, SemanticVersion y)
+        public static int Compare(SemanticVersion x, SemanticVersion y)
         {
             if (Object.ReferenceEquals(x, y))
             {
