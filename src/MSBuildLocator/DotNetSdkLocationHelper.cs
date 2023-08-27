@@ -133,8 +133,8 @@ namespace Microsoft.Build.Locator
         {
             Console.Error.WriteLine($"Try to load native library {libraryName}");
 
-            var hostFxrLibName = "libhostfxr";
-            var libExtension = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "dylib" : "so";
+            string hostFxrLibName = "libhostfxr";
+            string libExtension = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "dylib" : "so";
 
             // the DllImport hardcoded the name as hostfxr.
             if (!hostFxrLibName.Equals(libraryName, StringComparison.OrdinalIgnoreCase) && !libraryName.Equals("hostfxr", StringComparison.OrdinalIgnoreCase))
@@ -142,7 +142,7 @@ namespace Microsoft.Build.Locator
                 return IntPtr.Zero;
             }
 
-            var hostFxrRoot = Path.Combine(DotnetPath.Value, "host", "fxr");
+            string hostFxrRoot = Path.Combine(DotnetPath.Value, "host", "fxr");
             if (Directory.Exists(hostFxrRoot))
             {
                 var fileEnumerable = new FileSystemEnumerable<SemanticVersion?>(
@@ -153,16 +153,35 @@ namespace Microsoft.Build.Locator
                 };
 
                 // Load hostfxr from the highest version, because it should be backward-compatible
-                SemanticVersion? hostFxrVersion = fileEnumerable.Max();
+                SemanticVersion? hostFxrVersion;
+                
+                try
+                {
+                    hostFxrVersion = fileEnumerable.Max();
+                }
+                catch (ArgumentException)
+                {
+                    // LINQ Max throws when the list is empty.
+                    Console.Error.WriteLine($"No child folder was found in '{hostFxrRoot}'.");
+                    return IntPtr.Zero;
+                }
 
                 if (hostFxrVersion is not null)
                 {
-                    var hostFxrAssembly = Path.Combine(hostFxrRoot, hostFxrVersion.OriginalValue, Path.ChangeExtension(hostFxrLibName, libExtension));
+                    string hostFxrAssembly = Path.Combine(hostFxrRoot, hostFxrVersion.OriginalValue, Path.ChangeExtension(hostFxrLibName, libExtension));
 
                     if (File.Exists(hostFxrAssembly))
                     {
                         return NativeLibrary.TryLoad(hostFxrAssembly, out var handle) ? handle : IntPtr.Zero;
                     }
+                    else
+                    {
+                        Console.Error.WriteLine($"hostfxr file '{hostFxrAssembly}' cannot be found.");
+                    }
+                }
+                else
+                {
+                    Console.Error.WriteLine($"No runtime version was found in '{hostFxrRoot}'.");
                 }
             }
             else
