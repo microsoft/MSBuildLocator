@@ -170,7 +170,12 @@ namespace Microsoft.Build.Locator
 
                     if (File.Exists(hostFxrAssembly))
                     {
-                        return NativeLibrary.TryLoad(hostFxrAssembly, out var handle) ? handle : IntPtr.Zero;
+                        if (NativeLibrary.TryLoad(hostFxrAssembly, out var handle))
+                        {
+                            return handle;
+                        }
+
+                        Console.Error.WriteLine($"'{hostFxrAssembly}' cannot be loaded.");
                     }
                     else
                     {
