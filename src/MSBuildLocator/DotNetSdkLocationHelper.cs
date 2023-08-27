@@ -142,25 +142,12 @@ namespace Microsoft.Build.Locator
                 return IntPtr.Zero;
             }
 
-            string? dotnetFolderPath = Path.GetDirectoryName(DotnetPath.Value);
-            if (string.IsNullOrEmpty(dotnetFolderPath))
-            {
-                Console.Error.WriteLine($"Cannot find dotnet on the machine");
-                return IntPtr.Zero;
-            }
-
-            var hostFxrRoot = Path.Combine(dotnetFolderPath, "host", "fxr");
-            Console.Error.WriteLine($"Start to search native library inside: {hostFxrRoot}");
-
+            var hostFxrRoot = Path.Combine(DotnetPath.Value, "host", "fxr");
             if (Directory.Exists(hostFxrRoot))
             {
                 var fileEnumerable = new FileSystemEnumerable<SemanticVersion?>(
                     directory: hostFxrRoot,
-                    transform: static (ref FileSystemEntry entry) =>
-                    {
-                        Console.Error.WriteLine($"Child folder: {entry.FileName}");
-                        return SemanticVersionParser.TryParse(entry.FileName.ToString(), out var version) ? version : null;
-                    })
+                    transform: static (ref FileSystemEntry entry) => SemanticVersionParser.TryParse(entry.FileName.ToString(), out var version) ? version : null)
                 {
                     ShouldIncludePredicate = static (ref FileSystemEntry entry) => entry.IsDirectory
                 };
@@ -168,17 +155,19 @@ namespace Microsoft.Build.Locator
                 // Load hostfxr from the highest version, because it should be backward-compatible
                 SemanticVersion? hostFxrVersion = fileEnumerable.Max();
 
-                Console.Error.WriteLine($"Pick up one in {hostFxrVersion}");
                 if (hostFxrVersion is not null)
                 {
                     var hostFxrAssembly = Path.Combine(hostFxrRoot, hostFxrVersion.OriginalValue, Path.ChangeExtension(hostFxrLibName, libExtension));
-                    Console.Error.WriteLine($"Resolve to native library {hostFxrAssembly}");
 
                     if (File.Exists(hostFxrAssembly))
                     {
                         return NativeLibrary.TryLoad(hostFxrAssembly, out var handle) ? handle : IntPtr.Zero;
                     }
                 }
+            }
+            else
+            {
+                Console.Error.WriteLine($"HostFxr folder is missing: '{hostFxrRoot}'");
             }
 
             return IntPtr.Zero;
@@ -225,8 +214,24 @@ namespace Microsoft.Build.Locator
                 }
                 else
                 {
-                    dotnetPath = FindDotnetPathFromEnvVariable("DOTNET_HOST_PATH") 
-                        ?? FindDotnetPathFromEnvVariable("DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR")
+                    // DOTNET_HOST_PATH is pointing to the file, DOTNET_ROOT is the path of the folder
+                    string? hostPath = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
+                    if (!string.IsNullOrEmpty(hostPath) && File.Exists(hostPath))
+                    {
+                        if (!IsWindows)
+                        {
+                            hostPath = realpath(hostPath) ?? hostPath;
+                        }
+
+                        dotnetPath = Path.GetDirectoryName(hostPath);
+                        if (dotnetPath is not null)
+                        {
+                            // don't overwrite DOTNET_HOST_PATH, if we use it.
+                            return dotnetPath;
+                        }
+                    }
+
+                    dotnetPath = FindDotnetPathFromEnvVariable("DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR")
                         ?? GetDotnetPathFromPATH();
                 }
             }
@@ -236,7 +241,7 @@ namespace Microsoft.Build.Locator
                 throw new InvalidOperationException("Could not find the dotnet executable. Is it set on the DOTNET_ROOT?");
             }
 
-            SetEnvironmentVariableIfEmpty("DOTNET_HOST_PATH", dotnetPath);
+            SetEnvironmentVariableIfEmpty("DOTNET_HOST_PATH", Path.Combine(dotnetPath, ExeName));
 
             return dotnetPath;
         }
