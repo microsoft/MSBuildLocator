@@ -137,7 +137,7 @@ namespace Microsoft.Build.Locator
             var libExtension = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "dylib" : "so";
 
             // the DllImport hardcoded the name as hostfxr.
-            if (!hostFxrLibName.Equals(libraryName, StringComparison.Ordinal) && !libraryName.Equals("hostfxr", StringComparison.Ordinal))
+            if (!hostFxrLibName.Equals(libraryName, StringComparison.OrdinalIgnoreCase) && !libraryName.Equals("hostfxr", StringComparison.OrdinalIgnoreCase))
             {
                 return IntPtr.Zero;
             }
@@ -206,7 +206,7 @@ namespace Microsoft.Build.Locator
             {
                 string? dotnetExePath = GetCurrentProcessPath();
                 var isRunFromDotnetExecutable = !string.IsNullOrEmpty(dotnetExePath) 
-                    && Path.GetFileName(dotnetExePath).Equals(ExeName, StringComparison.InvariantCultureIgnoreCase);
+                    && Path.GetFileName(dotnetExePath).Equals(ExeName, StringComparison.OrdinalIgnoreCase);
                 
                 if (isRunFromDotnetExecutable)
                 {
