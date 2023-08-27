@@ -131,8 +131,6 @@ namespace Microsoft.Build.Locator
 
         private static IntPtr HostFxrResolver(Assembly assembly, string libraryName)
         {
-            Console.Error.WriteLine($"Try to load native library {libraryName}");
-
             string hostFxrLibName = "libhostfxr";
             string libExtension = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "dylib" : "so";
 
