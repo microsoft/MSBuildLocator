@@ -131,14 +131,16 @@ namespace Microsoft.Build.Locator
 
         private static IntPtr HostFxrResolver(Assembly assembly, string libraryName)
         {
-            string hostFxrLibName = "libhostfxr";
-            string libExtension = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "dylib" : "so";
-
             // the DllImport hardcoded the name as hostfxr.
-            if (!hostFxrLibName.Equals(libraryName, StringComparison.OrdinalIgnoreCase) && !libraryName.Equals("hostfxr", StringComparison.OrdinalIgnoreCase))
+            if (!libraryName.Equals(NativeMethods.HostFxrName, StringComparison.Ordinal))
             {
                 return IntPtr.Zero;
             }
+
+            string hostFxrLibName =
+                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                "hostfxr.dll" :
+                RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "libhostfxr.dylib" : "libhostfxr.so";
 
             string hostFxrRoot = Path.Combine(DotnetPath.Value, "host", "fxr");
             if (Directory.Exists(hostFxrRoot))
@@ -151,48 +153,18 @@ namespace Microsoft.Build.Locator
                 };
 
                 // Load hostfxr from the highest version, because it should be backward-compatible
-                SemanticVersion? hostFxrVersion;
-                
-                try
+                if (fileEnumerable.Max() is SemanticVersion hostFxrVersion)
                 {
-                    hostFxrVersion = fileEnumerable.Max();
-                }
-                catch (ArgumentException)
-                {
-                    // LINQ Max throws when the list is empty.
-                    Console.Error.WriteLine($"No child folder was found in '{hostFxrRoot}'.");
-                    return IntPtr.Zero;
-                }
-
-                if (hostFxrVersion is not null)
-                {
-                    string hostFxrAssembly = Path.Combine(hostFxrRoot, hostFxrVersion.OriginalValue, Path.ChangeExtension(hostFxrLibName, libExtension));
-
-                    if (File.Exists(hostFxrAssembly))
-                    {
-                        if (NativeLibrary.TryLoad(hostFxrAssembly, out var handle))
-                        {
-                            return handle;
-                        }
-
-                        Console.Error.WriteLine($"'{hostFxrAssembly}' cannot be loaded.");
-                    }
-                    else
-                    {
-                        Console.Error.WriteLine($"hostfxr file '{hostFxrAssembly}' cannot be found.");
-                    }
-                }
-                else
-                {
-                    Console.Error.WriteLine($"No runtime version was found in '{hostFxrRoot}'.");
+                    string hostFxrAssembly = Path.Combine(hostFxrRoot, hostFxrVersion.OriginalValue, hostFxrLibName);
+                    return NativeLibrary.Load(hostFxrAssembly);
                 }
             }
-            else
-            {
-                Console.Error.WriteLine($"HostFxr folder is missing: '{hostFxrRoot}'");
-            }
 
-            return IntPtr.Zero;
+            string error = $".NET SDK cannot be resolved, because {hostFxrLibName} cannot be found inside {hostFxrRoot}." +
+                Environment.NewLine +
+                $"This might indicate a corrupted SDK installation on the machine.";
+
+            throw new InvalidOperationException(error);
         }
 
         private static string SdkResolutionExceptionMessage(string methodName) => $"Failed to find all versions of .NET Core MSBuild. Call to {methodName}. There may be more details in stderr.";
