@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -130,33 +131,40 @@ namespace Microsoft.Build.Locator
 
         private static IntPtr HostFxrResolver(Assembly assembly, string libraryName)
         {
-            var hostFxrLibName = "libhostfxr";
-            var libExtension = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "dylib" : "so";
-
-            if (!hostFxrLibName.Equals(libraryName))
+            // the DllImport hardcoded the name as hostfxr.
+            if (!libraryName.Equals(NativeMethods.HostFxrName, StringComparison.Ordinal))
             {
                 return IntPtr.Zero;
             }
 
-            var hostFxrRoot = Path.Combine(DotnetPath.Value, "host", "fxr");
+            string hostFxrLibName =
+                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                "hostfxr.dll" :
+                RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "libhostfxr.dylib" : "libhostfxr.so";
+
+            string hostFxrRoot = Path.Combine(DotnetPath.Value, "host", "fxr");
             if (Directory.Exists(hostFxrRoot))
             {
-                // Load hostfxr from the highest version, because it should be backward-compatible
-                var hostFxrAssemblyDirectory = Directory.GetDirectories(hostFxrRoot)
-                            .Max(str => SemanticVersionParser.TryParse(str, out var version) ? version : null);
-
-                if (hostFxrAssemblyDirectory != null && !string.IsNullOrEmpty(hostFxrAssemblyDirectory.OriginalValue))
+                var fileEnumerable = new FileSystemEnumerable<SemanticVersion?>(
+                    directory: hostFxrRoot,
+                    transform: static (ref FileSystemEntry entry) => SemanticVersionParser.TryParse(entry.FileName.ToString(), out var version) ? version : null)
                 {
-                    var hostFxrAssembly = Path.Combine(hostFxrAssemblyDirectory.OriginalValue, Path.ChangeExtension(hostFxrLibName, libExtension));
+                    ShouldIncludePredicate = static (ref FileSystemEntry entry) => entry.IsDirectory
+                };
 
-                    if (File.Exists(hostFxrAssembly))
-                    {
-                        return NativeLibrary.TryLoad(hostFxrAssembly, out var handle) ? handle : IntPtr.Zero;
-                    }
+                // Load hostfxr from the highest version, because it should be backward-compatible
+                if (fileEnumerable.Max() is SemanticVersion hostFxrVersion)
+                {
+                    string hostFxrAssembly = Path.Combine(hostFxrRoot, hostFxrVersion.OriginalValue, hostFxrLibName);
+                    return NativeLibrary.Load(hostFxrAssembly);
                 }
             }
 
-            return IntPtr.Zero;
+            string error = $".NET SDK cannot be resolved, because {hostFxrLibName} cannot be found inside {hostFxrRoot}." +
+                Environment.NewLine +
+                $"This might indicate a corrupted SDK installation on the machine.";
+
+            throw new InvalidOperationException(error);
         }
 
         private static string SdkResolutionExceptionMessage(string methodName) => $"Failed to find all versions of .NET Core MSBuild. Call to {methodName}. There may be more details in stderr.";
@@ -192,7 +200,7 @@ namespace Microsoft.Build.Locator
             {
                 string? dotnetExePath = GetCurrentProcessPath();
                 var isRunFromDotnetExecutable = !string.IsNullOrEmpty(dotnetExePath) 
-                    && Path.GetFileName(dotnetExePath).Equals(ExeName, StringComparison.InvariantCultureIgnoreCase);
+                    && Path.GetFileName(dotnetExePath).Equals(ExeName, StringComparison.OrdinalIgnoreCase);
                 
                 if (isRunFromDotnetExecutable)
                 {
@@ -200,8 +208,24 @@ namespace Microsoft.Build.Locator
                 }
                 else
                 {
-                    dotnetPath = FindDotnetPathFromEnvVariable("DOTNET_HOST_PATH") 
-                        ?? FindDotnetPathFromEnvVariable("DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR")
+                    // DOTNET_HOST_PATH is pointing to the file, DOTNET_ROOT is the path of the folder
+                    string? hostPath = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
+                    if (!string.IsNullOrEmpty(hostPath) && File.Exists(hostPath))
+                    {
+                        if (!IsWindows)
+                        {
+                            hostPath = realpath(hostPath) ?? hostPath;
+                        }
+
+                        dotnetPath = Path.GetDirectoryName(hostPath);
+                        if (dotnetPath is not null)
+                        {
+                            // don't overwrite DOTNET_HOST_PATH, if we use it.
+                            return dotnetPath;
+                        }
+                    }
+
+                    dotnetPath = FindDotnetPathFromEnvVariable("DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR")
                         ?? GetDotnetPathFromPATH();
                 }
             }
@@ -211,7 +235,7 @@ namespace Microsoft.Build.Locator
                 throw new InvalidOperationException("Could not find the dotnet executable. Is it set on the DOTNET_ROOT?");
             }
 
-            SetEnvironmentVariableIfEmpty("DOTNET_HOST_PATH", dotnetPath);
+            SetEnvironmentVariableIfEmpty("DOTNET_HOST_PATH", Path.Combine(dotnetPath, ExeName));
 
             return dotnetPath;
         }
