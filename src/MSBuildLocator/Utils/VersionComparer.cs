@@ -4,9 +4,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace Microsoft.Build.Locator
+namespace Microsoft.Build.Locator.Utils
 {
-    internal static class VersionComparer 
+    internal sealed class VersionComparer
     {
         /// <summary>
         /// Determines if both versions are equal.
@@ -18,17 +18,17 @@ namespace Microsoft.Build.Locator
         /// </summary>
         public static int Compare(SemanticVersion x, SemanticVersion y)
         {
-            if (Object.ReferenceEquals(x, y))
+            if (ReferenceEquals(x, y))
             {
                 return 0;
             }
 
-            if (Object.ReferenceEquals(y, null))
+            if (y is null)
             {
                 return 1;
             }
 
-            if (Object.ReferenceEquals(x, null))
+            if (x is null)
             {
                 return -1;
             }
@@ -40,7 +40,7 @@ namespace Microsoft.Build.Locator
                 if (result != 0)
                 {
                     return result;
-                }                    
+                }
 
                 result = x.Minor.CompareTo(y.Minor);
                 if (result != 0)
@@ -96,20 +96,20 @@ namespace Microsoft.Build.Locator
                 if (!aExists && bExists)
                 {
                     return -1;
-                } 
+                }
 
                 if (aExists && !bExists)
                 {
                     return 1;
                 }
-                    
+
                 result = CompareRelease(a.Current, b.Current);
 
                 if (result != 0)
                 {
                     return result;
                 }
-                    
+
                 aExists = a.MoveNext();
                 bExists = b.MoveNext();
             }
@@ -126,8 +126,8 @@ namespace Microsoft.Build.Locator
             int result;
 
             // check if the identifiers are numeric
-            bool v1IsNumeric = Int32.TryParse(version1, out int version1Num);
-            bool v2IsNumeric = Int32.TryParse(version2, out int version2Num);
+            bool v1IsNumeric = int.TryParse(version1, out int version1Num);
+            bool v2IsNumeric = int.TryParse(version2, out int version2Num);
 
             // if both are numeric compare them as numbers
             if (v1IsNumeric && v2IsNumeric)

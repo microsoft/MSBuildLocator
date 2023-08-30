@@ -55,7 +55,7 @@ namespace Microsoft.Build.Locator.Tests
             VerifyQueryResults(instances, DiscoveryType.DotNetSdk);
         }
 
-        private void VerifyQueryResults(IEnumerable<VisualStudioInstance> instances, DiscoveryType discoveryTypes, params string[] expectedInstanceNames)
+        private static void VerifyQueryResults(IEnumerable<VisualStudioInstance> instances, DiscoveryType discoveryTypes, params string[] expectedInstanceNames)
         {
             IEnumerable<VisualStudioInstance> actual = MSBuildLocator.QueryVisualStudioInstances(instances, new VisualStudioInstanceQueryOptions
             {

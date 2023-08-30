@@ -5,6 +5,7 @@
 
 using System;
 using System.Linq;
+using Microsoft.Build.Locator.Utils;
 
 namespace Microsoft.Build.Locator
 {
@@ -24,7 +25,7 @@ namespace Microsoft.Build.Locator
 
             if (value != null)
             {
-                var (versionString, releaseLabels) = ParseSections(value);
+                (string versionString, string[] releaseLabels) = ParseSections(value);
 
                 if (Version.TryParse(versionString, out Version systemVersion))
                 {
@@ -85,7 +86,7 @@ namespace Microsoft.Build.Locator
 
             // 0 is fine, but 00 is not. 
             // 0A counts as an alpha numeric string where zeros are not counted
-            if (!allowLeadingZeros && chars.Length > 1 && chars[0] == '0' && chars.All(c => Char.IsDigit(c)))
+            if (!allowLeadingZeros && chars.Length > 1 && chars[0] == '0' && chars.All(c => char.IsDigit(c)))
             {
                 // no leading zeros in labels allowed
                 result = false;

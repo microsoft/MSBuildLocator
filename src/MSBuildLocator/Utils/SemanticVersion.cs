@@ -5,13 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Microsoft.Build.Locator
+namespace Microsoft.Build.Locator.Utils
 {
     internal class SemanticVersion : IComparable<SemanticVersion>
     {
         private readonly IEnumerable<string> _releaseLabels;
-        private Version _version;
-        private string _originalValue;
+        private readonly Version _version;
 
         public SemanticVersion(Version version, IEnumerable<string> releaseLabels, string originalValue)
         {
@@ -22,7 +21,7 @@ namespace Microsoft.Build.Locator
                 _releaseLabels = releaseLabels.ToArray();
             }
 
-            _originalValue = originalValue;
+            OriginalValue = originalValue;
         }
 
         /// <summary>
@@ -45,12 +44,12 @@ namespace Microsoft.Build.Locator
         /// </summary>
         public IEnumerable<string> ReleaseLabels => _releaseLabels ?? Enumerable.Empty<string>();
 
-        public string OriginalValue => _originalValue;
+        public string OriginalValue { get; }
 
         /// <summary>
         /// The full pre-release label for the version.
         /// </summary>
-        public string Release => _releaseLabels != null ? String.Join(".", _releaseLabels) : String.Empty;
+        public string Release => _releaseLabels != null ? string.Join(".", _releaseLabels) : string.Empty;
 
         /// <summary>
         /// True if pre-release labels exist for the version.
@@ -61,8 +60,8 @@ namespace Microsoft.Build.Locator
             {
                 if (ReleaseLabels != null)
                 {
-                    var enumerator = ReleaseLabels.GetEnumerator();
-                    return (enumerator.MoveNext() && !String.IsNullOrEmpty(enumerator.Current));
+                    IEnumerator<string> enumerator = ReleaseLabels.GetEnumerator();
+                    return enumerator.MoveNext() && !string.IsNullOrEmpty(enumerator.Current);
                 }
 
                 return false;
@@ -72,9 +71,6 @@ namespace Microsoft.Build.Locator
         /// <summary>
         /// Compare versions.
         /// </summary>
-        public int CompareTo(SemanticVersion other)
-        {
-            return VersionComparer.Compare(this, other);
-        }
+        public int CompareTo(SemanticVersion other) => VersionComparer.Compare(this, other);
     }
 }
