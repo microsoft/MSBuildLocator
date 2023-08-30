@@ -1,5 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if NETCOREAPP
 
@@ -86,7 +86,7 @@ namespace Microsoft.Build.Locator
 
             // 0 is fine, but 00 is not. 
             // 0A counts as an alpha numeric string where zeros are not counted
-            if (!allowLeadingZeros && chars.Length > 1 && chars[0] == '0' && chars.All(c => Char.IsDigit(c)))
+            if (!allowLeadingZeros && chars.Length > 1 && chars[0] == '0' && chars.All(c => char.IsDigit(c)))
             {
                 // no leading zeros in labels allowed
                 result = false;
