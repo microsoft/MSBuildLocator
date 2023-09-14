@@ -153,7 +153,8 @@ namespace Microsoft.Build.Locator
                     // Get a list of hostfxr assembly directories (e.g., 6.0.3, 7.0.1-preview.2.4)
                     IList<SemanticVersion> hostFxrAssemblyDirs = Directory.GetDirectories(hostFxrRoot)
                         .Select(path => SemanticVersionParser.TryParse(Path.GetFileName(path), out SemanticVersion? version) ? version : null)
-                        .Select(v => v!)
+                        .Where(v => v != null)
+                        .Cast<SemanticVersion>()
                         .OrderByDescending(v => v)
                         .ToList();
 
