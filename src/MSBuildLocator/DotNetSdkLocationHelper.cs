@@ -195,10 +195,10 @@ namespace Microsoft.Build.Locator
                     }
                 });
 
-                if (rc == 0 && !string.IsNullOrEmpty(resolvedSdk))
+                if (rc == 0)
                 {
                     SetEnvironmentVariableIfEmpty("DOTNET_HOST_PATH", dotnetPath);
-                    break;
+                    return resolvedSdk;
                 }
             }
             
@@ -226,7 +226,7 @@ namespace Microsoft.Build.Locator
             AddIfValid(GetDotnetPathFromPATH());
 
             return pathCandidates.Count == 0
-                ? throw new InvalidOperationException("Path to dotnet executable is not set. Make sure it is added it either to DOTNET_HOST_PATH or PATH environment variable.")
+                ? throw new InvalidOperationException("Path to dotnet executable is not set. Make sure it is added either to DOTNET_HOST_PATH or PATH environment variable.")
                 : pathCandidates;
 
             void AddIfValid(string? path)
