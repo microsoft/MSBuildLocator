@@ -226,7 +226,9 @@ namespace Microsoft.Build.Locator
             AddIfValid(GetDotnetPathFromPATH());
 
             return pathCandidates.Count == 0
-                ? throw new InvalidOperationException("Path to dotnet executable is not set. Make sure it is added either to DOTNET_HOST_PATH or PATH environment variable.")
+                ? throw new InvalidOperationException("Path to dotnet executable is not set. " +
+                    "The probed variables are: DOTNET_ROOT, DOTNET_HOST_PATH, DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR and PATH. " +
+                    "Make sure, that at least one of the listed variables points to the existing dotnet executable.")
                 : pathCandidates;
 
             void AddIfValid(string? path)
