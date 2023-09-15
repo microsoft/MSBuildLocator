@@ -176,7 +176,6 @@ namespace Microsoft.Build.Locator
             return IntPtr.Zero;
         }
 
-
         private static string SdkResolutionExceptionMessage(string methodName) => $"Failed to find all versions of .NET Core MSBuild. Call to {methodName}. There may be more details in stderr.";
 
         /// <summary>
