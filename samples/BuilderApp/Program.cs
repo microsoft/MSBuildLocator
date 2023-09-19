@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Framework;
@@ -14,37 +13,37 @@ using Microsoft.Build.Locator;
 
 namespace BuilderApp
 {
-    internal sealed class Program
+    internal class Program
     {
         private static void Main(string[] args)
         {
             Header();
-            string projectFilePath = Args(args);
+            var projectFilePath = Args(args);
 
             // Before we can build we need to resolve MSBuild assemblies. We could:
             //   1) Use defaults and call: MSBuildLocator.RegisterDefaults();
             //   2) Do something fancier and ask the user. As an example we'll do that.
             var instances = MSBuildLocator.QueryVisualStudioInstances().ToList();
-            (VisualStudioInstance VSInstance, string MSBuildPath) = AskWhichMSBuildToUse(instances);
+            var msbuildDeploymentToUse = AskWhichMSBuildToUse(instances);
 
             // Calling Register methods will subscribe to AssemblyResolve event. After this we can
             // safely call code that use MSBuild types (in the Builder class).
-            if (VSInstance != null)
+            if (msbuildDeploymentToUse.VSInstance != null)
             {
-                Console.WriteLine($"Using MSBuild from VS Instance: {VSInstance.Name} - {VSInstance.Version}");
+                Console.WriteLine($"Using MSBuild from VS Instance: {msbuildDeploymentToUse.VSInstance.Name} - {msbuildDeploymentToUse.VSInstance.Version}");
                 Console.WriteLine();
 
-                MSBuildLocator.RegisterInstance(VSInstance);
+                MSBuildLocator.RegisterInstance(msbuildDeploymentToUse.VSInstance);
             }
             else
             {
-                Console.WriteLine($"Using MSBuild from path: {MSBuildPath}");
+                Console.WriteLine($"Using MSBuild from path: {msbuildDeploymentToUse.MSBuildPath}");
                 Console.WriteLine();
 
-                MSBuildLocator.RegisterMSBuildPath(MSBuildPath);
+                MSBuildLocator.RegisterMSBuildPath(msbuildDeploymentToUse.MSBuildPath);
             }
 
-            bool result = Builder.Build(projectFilePath);
+            var result = new Builder().Build(projectFilePath);
             Console.WriteLine();
 
             Console.ForegroundColor = result ? ConsoleColor.Green : ConsoleColor.Red;
@@ -60,10 +59,10 @@ namespace BuilderApp
             }
 
             Console.WriteLine($"0) Custom path");
-            for (int i = 1; i <= instances.Count; i++)
+            for (var i = 1; i <= instances.Count; i++)
             {
-                VisualStudioInstance instance = instances[i - 1];
-                string recommended = string.Empty;
+                var instance = instances[i - 1];
+                var recommended = string.Empty;
 
                 // The dev console is probably always the right choice because the user explicitly opened
                 // one associated with a Visual Studio install. It will always be first in the list.
@@ -75,27 +74,27 @@ namespace BuilderApp
 
             Console.WriteLine();
             Console.WriteLine("Select an instance of MSBuild: ");
-            string answer = Console.ReadLine();
+            var answer = Console.ReadLine();
 
             if (int.TryParse(answer, out int instanceChoice) && instanceChoice >= 0 && instanceChoice <= instances.Count)
             {
                 if (instanceChoice == 0)
                 {
                     Console.WriteLine("Input path to MSBuild deployment:");
-                    string msBuildPath = Console.ReadLine();
+                    var msbuildPath = Console.ReadLine();
 
-                    if (!Directory.Exists(msBuildPath))
+                    if (!Directory.Exists(msbuildPath))
                     {
-                        Console.WriteLine($"Directory does not exist: {msBuildPath}");
+                        Console.WriteLine($"Directory does not exist: {msbuildPath}");
                         Environment.Exit(-1);
                     }
 
-                    return (null, msBuildPath);
+                    return (null, msbuildPath);
 
                 }
                 else
                 {
-                    VisualStudioInstance instanceUsed = instances[instanceChoice - 1];
+                    var instanceUsed = instances[instanceChoice - 1];
                     return (instanceUsed, null);
                 }
             }
@@ -117,7 +116,7 @@ namespace BuilderApp
         private static string Args(string[] args)
         {
             if (args.Length < 1 || !File.Exists(args[0])) Usage();
-            string projectFilePath = args[0];
+            var projectFilePath = args[0];
             return projectFilePath;
         }
 
@@ -140,9 +139,9 @@ namespace BuilderApp
     /// </remarks>
     public class Builder
     {
-        public static bool Build(string projectFile)
+        public bool Build(string projectFile)
         {
-            Assembly assembly = typeof(Project).Assembly;
+            var assembly = typeof(Project).Assembly;
             FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
 
             Console.WriteLine();
@@ -155,7 +154,7 @@ namespace BuilderApp
             return project.Build(new Logger());
         }
 
-        private sealed class Logger : ILogger
+        private class Logger : ILogger
         {
             public void Initialize(IEventSource eventSource)
             {

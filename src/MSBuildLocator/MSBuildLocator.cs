@@ -60,7 +60,10 @@ namespace Microsoft.Build.Locator
         ///     Only includes Visual Studio 2017 (v15.0) and higher.
         /// </remarks>
         /// <returns>Enumeration of all Visual Studio instances detected on the machine.</returns>
-        public static IEnumerable<VisualStudioInstance> QueryVisualStudioInstances() => QueryVisualStudioInstances(VisualStudioInstanceQueryOptions.Default);
+        public static IEnumerable<VisualStudioInstance> QueryVisualStudioInstances()
+        {
+            return QueryVisualStudioInstances(VisualStudioInstanceQueryOptions.Default);
+        }
 
         /// <summary>
         ///     Query for Visual Studio instances matching the given options.
@@ -71,11 +74,17 @@ namespace Microsoft.Build.Locator
         /// <param name="options">Query options for Visual Studio instances.</param>
         /// <returns>Enumeration of Visual Studio instances detected on the machine.</returns>
         public static IEnumerable<VisualStudioInstance> QueryVisualStudioInstances(
-            VisualStudioInstanceQueryOptions options) => QueryVisualStudioInstances(GetInstances(options), options);
+            VisualStudioInstanceQueryOptions options)
+        {
+            return QueryVisualStudioInstances(GetInstances(options), options);
+        }
 
         internal static IEnumerable<VisualStudioInstance> QueryVisualStudioInstances(
             IEnumerable<VisualStudioInstance> instances,
-            VisualStudioInstanceQueryOptions options) => instances.Where(i => options.DiscoveryTypes.HasFlag(i.DiscoveryType));
+            VisualStudioInstanceQueryOptions options)
+        {
+            return instances.Where(i => options.DiscoveryTypes.HasFlag(i.DiscoveryType));
+        }
 
         /// <summary>
         ///     Discover instances of Visual Studio and register the first one. See <see cref="RegisterInstance" />.
@@ -86,7 +95,7 @@ namespace Microsoft.Build.Locator
             VisualStudioInstance instance = GetInstances(VisualStudioInstanceQueryOptions.Default).FirstOrDefault();
             if (instance == null)
             {
-                string error = "No instances of MSBuild could be detected." +
+                var error = "No instances of MSBuild could be detected." +
                             Environment.NewLine +
                             $"Try calling {nameof(RegisterInstance)} or {nameof(RegisterMSBuildPath)} to manually register one.";
 
@@ -134,14 +143,17 @@ namespace Microsoft.Build.Locator
         ///     Add assembly resolution for Microsoft.Build core dlls in the current AppDomain from the specified
         ///     path.
         /// </summary>
-        /// <param name="msBuildPath">
+        /// <param name="msbuildPath">
         ///     Path to the directory containing a deployment of MSBuild binaries.
         ///     A minimal MSBuild deployment would be the publish result of the Microsoft.Build.Runtime package.
         ///
         ///     In order to restore and build real projects, one needs a deployment that contains the rest of the toolchain (nuget, compilers, etc.).
         ///     Such deployments can be found in installations such as Visual Studio or dotnet CLI.
         /// </param>
-        public static void RegisterMSBuildPath(string msBuildPath) => RegisterMSBuildPath(new string[] { msBuildPath });
+        public static void RegisterMSBuildPath(string msbuildPath)
+        {
+            RegisterMSBuildPath(new string[] { msbuildPath });
+        }
 
         /// <summary>
         ///     Add assembly resolution for Microsoft.Build core dlls in the current AppDomain from the specified
@@ -166,7 +178,7 @@ namespace Microsoft.Build.Locator
             {
                 if (string.IsNullOrWhiteSpace(msbuildSearchPaths[i]))
                 {
-                    nullOrWhiteSpaceExceptions.Add(new ArgumentException($"Value at position {i + 1} may not be null or whitespace", nameof(msbuildSearchPaths)));
+                    nullOrWhiteSpaceExceptions.Add(new ArgumentException($"Value at position {i+1} may not be null or whitespace", nameof(msbuildSearchPaths)));
                 }
             }
             if (nullOrWhiteSpaceExceptions.Count > 0)
@@ -182,9 +194,9 @@ namespace Microsoft.Build.Locator
 
             if (!CanRegister)
             {
-                string loadedAssemblyList = string.Join(Environment.NewLine, LoadedMsBuildAssemblies.Select(a => a.GetName()));
+                var loadedAssemblyList = string.Join(Environment.NewLine, LoadedMsBuildAssemblies.Select(a => a.GetName()));
 
-                string error = $"{typeof(MSBuildLocator)}.{nameof(RegisterInstance)} was called, but MSBuild assemblies were already loaded." +
+                var error = $"{typeof(MSBuildLocator)}.{nameof(RegisterInstance)} was called, but MSBuild assemblies were already loaded." +
                     Environment.NewLine +
                     $"Ensure that {nameof(RegisterInstance)} is called before any method that directly references types in the Microsoft.Build namespace has been called." +
                     Environment.NewLine +
@@ -206,17 +218,17 @@ namespace Microsoft.Build.Locator
             // This overrides the latter assumption to let it find the right MSBuild.
             foreach (string path in msbuildSearchPaths)
             {
-                string msBuildExe = Path.Combine(path, "MSBuild.exe");
-                if (File.Exists(msBuildExe))
+                string msbuildExe = Path.Combine(path, "MSBuild.exe");
+                if (File.Exists(msbuildExe))
                 {
-                    FileVersionInfo ver = FileVersionInfo.GetVersionInfo(msBuildExe);
+                    FileVersionInfo ver = FileVersionInfo.GetVersionInfo(msbuildExe);
                     if (ver.FileMajorPart < 17 || (ver.FileMajorPart == 17 && ver.FileMinorPart < 1))
                     {
-                        if (Path.GetDirectoryName(msBuildExe).EndsWith(@"\amd64", StringComparison.OrdinalIgnoreCase))
+                        if (Path.GetDirectoryName(msbuildExe).EndsWith(@"\amd64", StringComparison.OrdinalIgnoreCase))
                         {
-                            msBuildExe = Path.Combine(path.Substring(0, path.Length - 6), "MSBuild.exe");
+                            msbuildExe = Path.Combine(path.Substring(0, path.Length - 6), "MSBuild.exe");
                         }
-                        Environment.SetEnvironmentVariable("MSBUILD_EXE_PATH", msBuildExe);
+                        Environment.SetEnvironmentVariable("MSBUILD_EXE_PATH", msbuildExe);
                     }
                     break;
                 }
@@ -233,7 +245,10 @@ namespace Microsoft.Build.Locator
 
             AppDomain.CurrentDomain.AssemblyResolve += s_registeredHandler;
 #else
-            s_registeredHandler = (_, assemblyName) => TryLoadAssembly(assemblyName);
+            s_registeredHandler = (_, assemblyName) => 
+            {
+                return TryLoadAssembly(assemblyName);
+            };
 
             AssemblyLoadContext.Default.Resolving += s_registeredHandler;
 #endif
@@ -252,9 +267,9 @@ namespace Microsoft.Build.Locator
 
                     // Look in the MSBuild folder for any unresolved reference. It may be a dependency
                     // of MSBuild or a task.
-                    foreach (string msBuildPath in msbuildSearchPaths)
+                    foreach (string msbuildPath in msbuildSearchPaths)
                     {
-                        string targetAssembly = Path.Combine(msBuildPath, assemblyName.Name + ".dll");
+                        string targetAssembly = Path.Combine(msbuildPath, assemblyName.Name + ".dll");
                         if (File.Exists(targetAssembly))
                         {
                             assembly = Assembly.LoadFrom(targetAssembly);
@@ -295,7 +310,7 @@ namespace Microsoft.Build.Locator
                 [MSBuildSDKsPath] = Path.Combine(dotNetSdkPath, "Sdks")
             };
 
-            foreach (KeyValuePair<string, string> kvp in variables)
+            foreach (var kvp in variables)
             {
                 Environment.SetEnvironmentVariable(kvp.Key, kvp.Value);
             }
@@ -310,16 +325,16 @@ namespace Microsoft.Build.Locator
                 return false;
             }
 
-            byte[] publicKeyToken = assemblyName.GetPublicKeyToken();
+            var publicKeyToken = assemblyName.GetPublicKeyToken();
             if (publicKeyToken == null || publicKeyToken.Length == 0)
             {
                 return false;
             }
 
-            StringBuilder sb = new StringBuilder();
-            foreach (byte b in publicKeyToken)
+            var sb = new StringBuilder();
+            foreach (var b in publicKeyToken)
             {
-                _ = sb.Append($"{b:x2}");
+                sb.Append($"{b:x2}");
             }
 
             return sb.ToString().Equals(MSBuildPublicKeyToken, StringComparison.OrdinalIgnoreCase);
@@ -328,50 +343,45 @@ namespace Microsoft.Build.Locator
         private static IEnumerable<VisualStudioInstance> GetInstances(VisualStudioInstanceQueryOptions options)
         {
 #if NET46
-            VisualStudioInstance devConsole = GetDevConsoleInstance();
+            var devConsole = GetDevConsoleInstance();
             if (devConsole != null)
-            {
                 yield return devConsole;
-            }
 
-#if FEATURE_VISUALSTUDIOSETUP
-            foreach (VisualStudioInstance instance in VisualStudioLocationHelper.GetInstances())
-            {
+    #if FEATURE_VISUALSTUDIOSETUP
+            foreach (var instance in VisualStudioLocationHelper.GetInstances())
                 yield return instance;
-            }
-#endif
+    #endif
 #endif
 
 #if NETCOREAPP
-            foreach (VisualStudioInstance dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory))
-            {
+            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory))
                 yield return dotnetSdk;
-            }
 #endif
         }
 
 #if NET46
         private static VisualStudioInstance GetDevConsoleInstance()
         {
-            string path = Environment.GetEnvironmentVariable("VSINSTALLDIR");
+            var path = Environment.GetEnvironmentVariable("VSINSTALLDIR");
             if (!string.IsNullOrEmpty(path))
             {
-                string versionString = Environment.GetEnvironmentVariable("VSCMD_VER");
-                _ = Version.TryParse(versionString, out Version version);
+                var versionString = Environment.GetEnvironmentVariable("VSCMD_VER");
+                Version version;
+                Version.TryParse(versionString, out version);
 
                 if (version == null && versionString?.Contains('-') == true)
                 {
                     versionString = versionString.Substring(0, versionString.IndexOf('-'));
-                    _ = Version.TryParse(versionString, out version);
+                    Version.TryParse(versionString, out version);
                 }
 
                 if (version == null)
                 {
                     versionString = Environment.GetEnvironmentVariable("VisualStudioVersion");
-                    _ = Version.TryParse(versionString, out version);
+                    Version.TryParse(versionString, out version);
                 }
 
-                if (version != null)
+                if(version != null)
                 {
                     return new VisualStudioInstance("DEVCONSOLE", path, version, DiscoveryType.DeveloperConsole);
                 }
