@@ -221,7 +221,17 @@ namespace Microsoft.Build.Locator
                 AddIfValid(Path.GetDirectoryName(dotnetExePath));
             }
 
-            AddIfValid(FindDotnetPathFromEnvVariable("DOTNET_HOST_PATH"));
+            string? hostPath = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
+            if (!string.IsNullOrEmpty(hostPath) && File.Exists(hostPath))
+            {
+                if (!IsWindows)
+                {
+                    hostPath = realpath(hostPath) ?? hostPath;
+                }
+
+                AddIfValid(Path.GetDirectoryName(hostPath));
+            }
+
             AddIfValid(FindDotnetPathFromEnvVariable("DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR"));
             AddIfValid(GetDotnetPathFromPATH());
 
