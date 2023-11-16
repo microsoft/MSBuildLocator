@@ -200,7 +200,7 @@ namespace Microsoft.Build.Locator
                     Environment.NewLine +
                     $"Ensure that {nameof(RegisterInstance)} is called before any method that directly references types in the Microsoft.Build namespace has been called." +
                     Environment.NewLine +
-                    "This dependency arises from when a method is just-in-time compiled, so if it breaks even if the reference to a Microsoft.Build type has not been executed." +
+                    "This dependency arises from when a method is just-in-time compiled, so it breaks even if the reference to a Microsoft.Build type has not been executed." +
                     Environment.NewLine +
                     "For more details, see aka.ms/RegisterMSBuildLocator" +
                     Environment.NewLine +
