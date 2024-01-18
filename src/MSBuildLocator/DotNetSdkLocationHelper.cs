@@ -24,7 +24,7 @@ namespace Microsoft.Build.Locator
         private static readonly string ExeName = IsWindows ? "dotnet.exe" : "dotnet";
         private static readonly Lazy<IList<string>> s_dotnetPathCandidates = new(() => ResolveDotnetPathCandidates());
 
-        public static VisualStudioInstance? GetInstance(string dotNetSdkPath)
+        public static VisualStudioInstance? GetInstance(string dotNetSdkPath, bool allowQueryAllRuntimeVersions)
         {
             if (string.IsNullOrWhiteSpace(dotNetSdkPath) || !File.Exists(Path.Combine(dotNetSdkPath, "Microsoft.Build.dll")))
             {
@@ -52,6 +52,16 @@ namespace Microsoft.Build.Locator
                 return null;
             }
 
+            // Components of the SDK often have dependencies on the runtime they shipped with, including that several tasks that shipped
+            // in the .NET 5 SDK rely on the .NET 5.0 runtime. Assuming the runtime that shipped with a particular SDK has the same version,
+            // this ensures that we don't choose an SDK that doesn't work with the runtime of the chosen application. This is not guaranteed
+            // to always work but should work for now.
+            if (major > Environment.Version.Major || (major == Environment.Version.Major && minor > Environment.Version.Minor) 
+                && !allowQueryAllRuntimeVersions)
+            {
+                return null;
+            }
+
             return new VisualStudioInstance(
                 name: ".NET Core SDK",
                 path: dotNetSdkPath,
@@ -59,11 +69,11 @@ namespace Microsoft.Build.Locator
                 discoveryType: DiscoveryType.DotNetSdk);
         }
 
-        public static IEnumerable<VisualStudioInstance> GetInstances(string workingDirectory)
+        public static IEnumerable<VisualStudioInstance> GetInstances(string workingDirectory, bool allowQueryAllRuntimes)
         {            
             foreach (var basePath in GetDotNetBasePaths(workingDirectory))
             {
-                var dotnetSdk = GetInstance(basePath);
+                var dotnetSdk = GetInstance(basePath, allowQueryAllRuntimes);
                 if (dotnetSdk != null)
                 {
                     yield return dotnetSdk;

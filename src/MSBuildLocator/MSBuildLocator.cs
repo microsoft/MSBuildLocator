@@ -354,7 +354,7 @@ namespace Microsoft.Build.Locator
 #endif
 
 #if NETCOREAPP
-            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory))
+            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory, options.AllowQueryAllRuntimeVersions))
                 yield return dotnetSdk;
 #endif
         }
