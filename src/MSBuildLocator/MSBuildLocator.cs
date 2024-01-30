@@ -44,6 +44,12 @@ namespace Microsoft.Build.Locator
         public static bool IsRegistered => s_registeredHandler != null;
 
         /// <summary>
+        ///     This flag enables the removal of the existing restriction on querying installed Visual Studio instances 
+        ///     with a runtime version lower than or equal to the one in the current environment.
+        /// </summary>
+        public static bool AllowQueryAllRuntimeVersions { get; set; } = false;
+
+        /// <summary>
         ///     Gets a value indicating whether an instance of MSBuild can be registered.
         /// </summary>
         /// <remarks>
@@ -354,7 +360,7 @@ namespace Microsoft.Build.Locator
 #endif
 
 #if NETCOREAPP
-            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory, options.AllowQueryAllRuntimeVersions))
+            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory, AllowQueryAllRuntimeVersions))
                 yield return dotnetSdk;
 #endif
         }

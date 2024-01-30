@@ -33,11 +33,5 @@ namespace Microsoft.Build.Locator
         ///     Working directory to use when querying for instances. Ensure it is the project directory to pick up the right global.json.
         /// </summary>
         public string WorkingDirectory { get; set; } = Environment.CurrentDirectory;
-
-        /// <summary>
-        ///     This variable enables the removal of the existing restriction on querying installed Visual Studio instances 
-        ///     with a runtime version lower than or equal to the one in the current environment.
-        /// </summary>
-        public bool AllowQueryAllRuntimeVersions { get; set; } = Environment.GetEnvironmentVariable("DOTNET_MSBUILD_QUERY_ALL_RUNTIMES") == "1";
     }
 }
