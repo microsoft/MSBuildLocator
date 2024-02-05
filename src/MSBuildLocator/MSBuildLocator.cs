@@ -247,7 +247,6 @@ namespace Microsoft.Build.Locator
 #if NET46
             s_registeredHandler = (_, eventArgs) =>
             {
-                var assemblyName = new AssemblyName(eventArgs.Name);
                 return TryLoadAssembly(new AssemblyName(eventArgs.Name));
             };
 
