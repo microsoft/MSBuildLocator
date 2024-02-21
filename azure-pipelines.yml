@@ -1,91 +1,100 @@
-pool:
-  name: VSEngSS-MicroBuild2022-1ES
-  demands: msbuild
-
 variables:
-  BuildConfiguration: 'Release'
-  BuildPlatform: ''
-  Codeql.Enabled: true
+- name: BuildPlatform
+  value: ''
+- name: BuildConfiguration
+  value: 'Release'
+- name: TeamName
+  value: 'MSBuildLocator'
 
-steps:
-- task: MicroBuildSigningPlugin@1
-  inputs:
-    signType: '$(SignType)'
-    zipSources: true
+resources:
+  repositories:
+  - repository: CustomPipelineTemplates
+    type: git
+    name: 1ESPipelineTemplates/MicroBuildTemplate
 
-- task: MSBuild@1
-  displayName: '/t:Pack'
-  inputs:
-    solution: MSBuildLocator.sln
-    platform: '$(BuildPlatform)'
-    configuration: '$(BuildConfiguration)'
-    msbuildArguments: '/t:Pack /restore -binaryLogger:$(Build.SourcesDirectory)\Pack.binlog'
+extends:
+  template: azure-pipelines/MicroBuild.1ES.Official.yml@CustomPipelineTemplates
+  parameters:
+    pool:
+      name: VSEngSS-MicroBuild2022-1ES
+      demands:
+      - msbuild
+    sdl:
+      sourceAnalysisPool:
+        name: VSEngSS-MicroBuild2022-1ES
+    stages:
+    - stage: stage
+      jobs:
+      - job: job
+        templateContext:
+          mb:
+            signing:
+              enabled: true
+              signType: '$(SignType)'
+              zipSources: false
+          outputs:
+          - output: Symbols
+            displayName: 'Upload Symbols Artifact'
+            targetPath: '$(Build.ArtifactStagingDirectory)/symbols'
+          - output: bin
+            displayName: 'Upload Bin to drop'
+            targetPath: '$(Build.ArtifactStagingDirectory)\bin'
+          - output: pkg
+            displayName: 'Upload NuGet to drop'
+            targetPath: '$(Build.ArtifactStagingDirectory)\pkg'
+          - output: logs
+            displayName: 'Upload logs to drop'
+            targetPath: '$(Build.ArtifactStagingDirectory)\logs'
+            condition: succeededOrFailed()
+        steps:
+        - task: MSBuild@1
+          displayName: '/t:Pack'
+          inputs:
+            solution: MSBuildLocator.sln
+            platform: '$(BuildPlatform)'
+            configuration: '$(BuildConfiguration)'
+            msbuildArguments: '/t:Pack /restore -binaryLogger:$(Build.SourcesDirectory)\Pack.binlog'
 
-- task: CopyFiles@2
-  displayName: 'Collect Symbols'
-  inputs:
-    SourceFolder: src/MSBuildLocator
-    Contents: '**\*.pdb'
-    TargetFolder: '$(Build.ArtifactStagingDirectory)/symbols'
-    CleanTargetFolder: true
+        - task: CopyFiles@2
+          displayName: 'Collect Symbols'
+          inputs:
+            SourceFolder: src/MSBuildLocator
+            Contents: '**\*.pdb'
+            TargetFolder: '$(Build.ArtifactStagingDirectory)/symbols'
+            CleanTargetFolder: true
 
-- task: PublishSymbols@2
-  displayName: 'Enable Source Server'
-  inputs:
-    SymbolsFolder: '$(Build.ArtifactStagingDirectory)\symbols'
-    SearchPattern: '**/*.pdb'
-    SymbolServerType: TeamServices
+        - task: PublishSymbols@2
+          displayName: 'Enable Source Server'
+          inputs:
+            SymbolsFolder: '$(Build.ArtifactStagingDirectory)\symbols'
+            SearchPattern: '**/*.pdb'
+            SymbolServerType: TeamServices
 
-- task: PublishBuildArtifacts@1
-  displayName: 'Upload Symbols Artifact'
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)/symbols'
-    ArtifactName: Symbols
+        - task: CopyFiles@2
+          displayName: 'Copy Bin to drop'
+          inputs:
+            SourceFolder: 'src\MSBuildLocator\bin\Release'
+            TargetFolder: '$(Build.ArtifactStagingDirectory)\bin'
 
-- task: CopyFiles@2
-  displayName: 'Copy Bin to drop'
-  inputs:
-    SourceFolder: 'src\MSBuildLocator\bin\Release'
-    TargetFolder: '$(Build.ArtifactStagingDirectory)\bin'
+        - task: CopyFiles@2
+          displayName: 'Copy NuGet to drop'
+          inputs:
+            SourceFolder: 'src\MSBuildLocator\bin\Release'
+            Contents: '*.nupkg'
+            TargetFolder: '$(Build.ArtifactStagingDirectory)\pkg'
 
-- task: PublishBuildArtifacts@1
-  displayName: 'Upload Bin to drop'
-  inputs:
-    PathToPublish: '$(Build.ArtifactStagingDirectory)\bin'
-    ArtifactName: bin
+        - task: PublishPipelineArtifact@1
+          displayName: 'Upload MicroBuildOutputs to drop'
+          inputs:
+            TargetPath: '$(Build.StagingDirectory)\MicroBuild\Output'
+            ArtifactName: MicroBuildOutputs
+          continueOnError: true
 
-- task: CopyFiles@2
-  displayName: 'Copy NuGet to drop'
-  inputs:
-    SourceFolder: 'src\MSBuildLocator\bin\Release'
-    Contents: '*.nupkg'
-    TargetFolder: '$(Build.ArtifactStagingDirectory)\pkg'
+        - task: CopyFiles@2
+          displayName: 'Copy logs to drop'
+          inputs:
+            Contents: '**\*.*log'
+            TargetFolder: '$(Build.ArtifactStagingDirectory)\logs'
 
-- task: PublishBuildArtifacts@1
-  displayName: 'Upload NuGet to drop'
-  inputs:
-    PathToPublish: '$(Build.ArtifactStagingDirectory)\pkg'
-    ArtifactName: pkg
-
-- task: PublishPipelineArtifact@1
-  displayName: 'Upload MicroBuildOutputs to drop'
-  inputs:
-    TargetPath: '$(Build.StagingDirectory)\MicroBuild\Output'
-    ArtifactName: MicroBuildOutputs
-  continueOnError: true
-
-- task: CopyFiles@2
-  displayName: 'Copy logs to drop'
-  inputs:
-    Contents: '**\*.*log'
-    TargetFolder: '$(Build.ArtifactStagingDirectory)\logs'
-
-- task: PublishBuildArtifacts@1
-  displayName: 'Upload logs to drop'
-  inputs:
-    PathToPublish: '$(Build.ArtifactStagingDirectory)\logs'
-    ArtifactName: logs
-  condition: succeededOrFailed()
-
-- task: ms-vseng.MicroBuildTasks.521a94ea-9e68-468a-8167-6dcf361ea776.MicroBuildCleanup@1
-  displayName: 'Execute cleanup tasks'
+        - task: ms-vseng.MicroBuildTasks.521a94ea-9e68-468a-8167-6dcf361ea776.MicroBuildCleanup@1
+          displayName: 'Execute cleanup tasks'
