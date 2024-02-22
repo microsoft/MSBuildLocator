@@ -33,18 +33,27 @@ extends:
               signType: '$(SignType)'
               zipSources: false
           outputs:
-          - output: Symbols
+          - output: buildArtifacts
             displayName: 'Upload Symbols Artifact'
-            targetPath: '$(Build.ArtifactStagingDirectory)/symbols'
-          - output: bin
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)/symbols'
+            artifactName: Symbols
+          - output: buildArtifacts
             displayName: 'Upload Bin to drop'
-            targetPath: '$(Build.ArtifactStagingDirectory)\bin'
-          - output: pkg
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)\bin'
+            artifactName: bin
+          - output: buildArtifacts
             displayName: 'Upload NuGet to drop'
-            targetPath: '$(Build.ArtifactStagingDirectory)\pkg'
-          - output: logs
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)\pkg'
+            artifactName: pkg
+          - output: pipelineArtifact
+            displayName: 'Upload MicroBuildOutputs to drop'
+            targetPath: '$(Build.StagingDirectory)\MicroBuild\Output'
+            artifactName: MicroBuildOutputs
+            continueOnError: true
+          - output: buildArtifacts
             displayName: 'Upload logs to drop'
-            targetPath: '$(Build.ArtifactStagingDirectory)\logs'
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)\logs'
+            artifactName: logs
             condition: succeededOrFailed()
         steps:
         - task: MSBuild@1
@@ -82,13 +91,6 @@ extends:
             SourceFolder: 'src\MSBuildLocator\bin\Release'
             Contents: '*.nupkg'
             TargetFolder: '$(Build.ArtifactStagingDirectory)\pkg'
-
-        - task: PublishPipelineArtifact@1
-          displayName: 'Upload MicroBuildOutputs to drop'
-          inputs:
-            TargetPath: '$(Build.StagingDirectory)\MicroBuild\Output'
-            ArtifactName: MicroBuildOutputs
-          continueOnError: true
 
         - task: CopyFiles@2
           displayName: 'Copy logs to drop'
