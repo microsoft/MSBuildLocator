@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -12,6 +11,8 @@ using System.Text;
 
 #if NETCOREAPP
 using System.Runtime.Loader;
+#else
+using System.Diagnostics;
 #endif
 
 namespace Microsoft.Build.Locator
@@ -42,14 +43,6 @@ namespace Microsoft.Build.Locator
         ///     Gets a value indicating whether an instance of MSBuild is currently registered.
         /// </summary>
         public static bool IsRegistered => s_registeredHandler != null;
-
-        /// <summary>
-        ///     Allow discovery of .NET SDK versions that are unlikely to be successfully loaded in the current process.
-        /// </summary>
-        /// <remarks>
-        ///     Defaults to <see langword="false"/>. Set this to <see langword="true"/> only if your application has special logic to handle loading an incompatible SDK, such as launching a new process with the target SDK's runtime.
-        /// </remarks.
-        public static bool AllowQueryAllRuntimeVersions { get; set; } = false;
 
         /// <summary>
         ///     Gets a value indicating whether an instance of MSBuild can be registered.
@@ -361,7 +354,7 @@ namespace Microsoft.Build.Locator
 #endif
 
 #if NETCOREAPP
-            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory, AllowQueryAllRuntimeVersions))
+            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory, options.AllowQueryAllRuntimeVersions))
                 yield return dotnetSdk;
 #endif
         }
