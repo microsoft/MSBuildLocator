@@ -139,17 +139,16 @@ namespace Microsoft.Build.Locator
             string nugetPath = Path.GetFullPath(Path.Combine(instance.MSBuildPath, "..", "..", "..", "Common7", "IDE", "CommonExtensions", "Microsoft", "NuGet"));
             if (Directory.Exists(nugetPath))
             {
-                RegisterMSBuildPath(new string[] { instance.MSBuildPath, nugetPath });
+                RegisterMSBuildPathsInternally(new string[] { instance.MSBuildPath, nugetPath });
             }
             else
             {
-                RegisterMSBuildPath(instance.MSBuildPath);
+                RegisterMSBuildPathsInternally(new string[] { instance.MSBuildPath });
             }
         }
 
         /// <summary>
-        ///     Add assembly resolution for Microsoft.Build core dlls in the current AppDomain from the specified
-        ///     path.
+        ///     Add assembly resolution for Microsoft.Build core dlls in the current AppDomain from the specified path and register environment variables for it.
         /// </summary>
         /// <param name="msbuildPath">
         ///     Path to the directory containing a deployment of MSBuild binaries.
@@ -160,12 +159,15 @@ namespace Microsoft.Build.Locator
         /// </param>
         public static void RegisterMSBuildPath(string msbuildPath)
         {
-            RegisterMSBuildPath(new string[] { msbuildPath });
+#if NETCOREAPP
+            ApplyDotNetSdkEnvironmentVariables(msbuildPath);
+#endif
+            RegisterMSBuildPathsInternally(new string[] { msbuildPath });
         }
 
         /// <summary>
         ///     Add assembly resolution for Microsoft.Build core dlls in the current AppDomain from the specified
-        ///     path.
+        ///     paths and register environment variables for the first path.
         /// </summary>
         /// <param name="msbuildSearchPaths">
         ///     Paths to directories containing a deployment of MSBuild binaries.
@@ -175,6 +177,17 @@ namespace Microsoft.Build.Locator
         ///     Such deployments can be found in installations such as Visual Studio or dotnet CLI.
         /// </param>
         public static void RegisterMSBuildPath(string[] msbuildSearchPaths)
+        {
+#if NETCOREAPP
+            if (msbuildSearchPaths.Any())
+            {
+                ApplyDotNetSdkEnvironmentVariables(msbuildSearchPaths.FirstOrDefault());
+            }
+#endif
+            RegisterMSBuildPathsInternally(msbuildSearchPaths);
+        }
+
+        private static void RegisterMSBuildPathsInternally(string[] msbuildSearchPaths)
         {
             if (msbuildSearchPaths.Length < 1)
             {
