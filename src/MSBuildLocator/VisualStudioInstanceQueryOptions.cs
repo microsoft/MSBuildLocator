@@ -36,7 +36,7 @@ namespace Microsoft.Build.Locator
         /// <remarks>
         ///     Defaults to <see langword="false"/>. Set this to <see langword="true"/> only if your application has special logic to handle loading an incompatible SDK, such as launching a new process with the target SDK's runtime.
         /// </remarks.
-        public bool AllowQueryAllRuntimeVersions { get; set; } = false;
+        public bool AllowAllRuntimeVersions { get; set; } = false;
 #endif
 
         /// <summary>

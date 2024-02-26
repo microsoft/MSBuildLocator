@@ -45,6 +45,14 @@ namespace Microsoft.Build.Locator
         public static bool IsRegistered => s_registeredHandler != null;
 
         /// <summary>
+        ///     Allow discovery of .NET SDK versions that are unlikely to be successfully loaded in the current process.
+        /// </summary>
+        /// <remarks>
+        ///     Defaults to <see langword="false"/>. Set this to <see langword="true"/> only if your application has special logic to handle loading an incompatible SDK, such as launching a new process with the target SDK's runtime.
+        /// </remarks.
+        public static bool AllowQueryAllRuntimeVersions { get; set; } = false;
+
+        /// <summary>
         ///     Gets a value indicating whether an instance of MSBuild can be registered.
         /// </summary>
         /// <remarks>
@@ -347,14 +355,16 @@ namespace Microsoft.Build.Locator
             if (devConsole != null)
                 yield return devConsole;
 
-    #if FEATURE_VISUALSTUDIOSETUP
+#if FEATURE_VISUALSTUDIOSETUP
             foreach (var instance in VisualStudioLocationHelper.GetInstances())
                 yield return instance;
-    #endif
+#endif
 #endif
 
 #if NETCOREAPP
-            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory, options.AllowQueryAllRuntimeVersions))
+            // AllowAllRuntimeVersions was added to VisualStudioInstanceQueryOptions for fulfilling Roslyn's needs. One of the properties will be removed in v2.0.
+            bool allowAllRuntimeVersions = AllowQueryAllRuntimeVersions || options.AllowAllRuntimeVersions;
+            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory, allowAllRuntimeVersions))
                 yield return dotnetSdk;
 #endif
         }
