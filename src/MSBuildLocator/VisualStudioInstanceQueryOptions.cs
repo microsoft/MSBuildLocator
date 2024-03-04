@@ -29,6 +29,16 @@ namespace Microsoft.Build.Locator
         /// </summary>
         public DiscoveryType DiscoveryTypes { get; set; }
 
+#if NETCOREAPP
+        /// <summary>
+        ///     Allow discovery of .NET SDK versions that are unlikely to be successfully loaded in the current process.
+        /// </summary>
+        /// <remarks>
+        ///     Defaults to <see langword="false"/>. Set this to <see langword="true"/> only if your application has special logic to handle loading an incompatible SDK, such as launching a new process with the target SDK's runtime.
+        /// </remarks.
+        public bool AllowAllRuntimeVersions { get; set; } = false;
+#endif
+
         /// <summary>
         ///     Working directory to use when querying for instances. Ensure it is the project directory to pick up the right global.json.
         /// </summary>

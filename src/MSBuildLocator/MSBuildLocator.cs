@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -12,6 +11,8 @@ using System.Text;
 
 #if NETCOREAPP
 using System.Runtime.Loader;
+#else
+using System.Diagnostics;
 #endif
 
 namespace Microsoft.Build.Locator
@@ -367,14 +368,16 @@ namespace Microsoft.Build.Locator
             if (devConsole != null)
                 yield return devConsole;
 
-    #if FEATURE_VISUALSTUDIOSETUP
+#if FEATURE_VISUALSTUDIOSETUP
             foreach (var instance in VisualStudioLocationHelper.GetInstances())
                 yield return instance;
-    #endif
+#endif
 #endif
 
 #if NETCOREAPP
-            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory, AllowQueryAllRuntimeVersions))
+            // AllowAllRuntimeVersions was added to VisualStudioInstanceQueryOptions for fulfilling Roslyn's needs. One of the properties will be removed in v2.0.
+            bool allowAllRuntimeVersions = AllowQueryAllRuntimeVersions || options.AllowAllRuntimeVersions;
+            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory, allowAllRuntimeVersions))
                 yield return dotnetSdk;
 #endif
         }
