@@ -1,3 +1,7 @@
+trigger:
+  - main
+  - release/*
+
 variables:
 - name: BuildPlatform
   value: ''
