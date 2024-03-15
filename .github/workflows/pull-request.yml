@@ -24,13 +24,13 @@ jobs:
           6.0.x
           8.0.x
     - name: Restore
-      run: dotnet restore -bl:restore.binlog
+      run: dotnet restore -bl:LocatorRestore.binlog
     - name: Build
       run: dotnet build --no-restore -bl:MSBuildLocator.binlog
     - name: Test
       run: dotnet test --no-build --verbosity normal
     - name: Pack
-      run: dotnet pack --no-build
+      run: dotnet pack --no-build --configuration Debug -bl:LocatorPack.binlog
     - name: Upload Packages
       uses: actions/upload-artifact@v2
       with:
