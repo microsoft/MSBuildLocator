@@ -82,6 +82,21 @@ extends:
             SymbolsFolder: '$(Build.ArtifactStagingDirectory)\symbols'
             SearchPattern: '**/*.pdb'
             SymbolServerType: TeamServices
+            
+        - task: MicroBuildArchiveSymbols@5
+          displayName: 'Upload Symbols'
+          inputs:
+            SymbolsFeatureName: '?'
+            SymbolsProject: '?'
+            SymbolsAgentPath: '?'
+            SubmitToInternet: false
+            ExpirationInDays: ?
+        
+        - task: PublishBuildArtifacts@1
+          displayName: 'Publish Symbols'
+          inputs:
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)\symbols'
+            ArtifactName: Symbols
 
         - task: CopyFiles@2
           displayName: 'Copy Bin to drop'
