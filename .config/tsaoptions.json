@@ -6,5 +6,6 @@
     "iterationPath": "DevDiv",
     "notificationAliases": [ "msbtm@microsoft.com" ],
     "repositoryName": "MSBuildLocator",
-    "codebaseName": "MSBuildLocator"
+    "codebaseName": "MSBuildLocator",
+    "serviceTreeId": "d0ebbe59-0779-4466-8280-a0ff9cab5550"
 }
