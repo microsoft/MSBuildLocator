@@ -56,8 +56,8 @@ namespace Microsoft.Build.Locator
             // in the .NET 5 SDK rely on the .NET 5.0 runtime. Assuming the runtime that shipped with a particular SDK has the same version,
             // this ensures that we don't choose an SDK that doesn't work with the runtime of the chosen application. This is not guaranteed
             // to always work but should work for now.
-            if (!allowQueryAllRuntimeVersions && 
-                (major > Environment.Version.Major || 
+            if (!allowQueryAllRuntimeVersions &&
+                (major > Environment.Version.Major ||
                  (major == Environment.Version.Major && minor > Environment.Version.Minor)))
             {
                 return null;
@@ -71,13 +71,18 @@ namespace Microsoft.Build.Locator
         }
 
         public static IEnumerable<VisualStudioInstance> GetInstances(string workingDirectory, bool allowQueryAllRuntimes)
-        {            
+        {
+            HashSet<Version> versions = new();
             foreach (var basePath in GetDotNetBasePaths(workingDirectory))
             {
                 var dotnetSdk = GetInstance(basePath, allowQueryAllRuntimes);
                 if (dotnetSdk != null)
                 {
-                    yield return dotnetSdk;
+                    // Only return an SDK once, even if it's installed in multiple locations.
+                    if (versions.Add(dotnetSdk.Version))
+                    {
+                        yield return dotnetSdk;
+                    }
                 }
             }
         }
@@ -158,7 +163,7 @@ namespace Microsoft.Build.Locator
                     };
 
                     var orderedVersions = fileEnumerable.Where(v => v != null).Select(v => v!).OrderByDescending(f => f).ToList();
-                    
+
                     foreach (SemanticVersion hostFxrVersion in orderedVersions)
                     {
                         string hostFxrAssembly = Path.Combine(hostFxrRoot, hostFxrVersion.OriginalValue, hostFxrLibName);
@@ -178,7 +183,7 @@ namespace Microsoft.Build.Locator
         }
 
         private static string SdkResolutionExceptionMessage(string methodName) => $"Failed to find all versions of .NET Core MSBuild. Call to {methodName}. There may be more details in stderr.";
-        
+
         /// <summary>
         /// Determines the directory location of the SDK accounting for
         /// global.json and multi-level lookup policy.
@@ -256,7 +261,7 @@ namespace Microsoft.Build.Locator
             // 32-bit architecture has (x86) suffix
             string envVarName = (IntPtr.Size == 4) ? "DOTNET_ROOT(x86)" : "DOTNET_ROOT";
             var dotnetPath = FindDotnetPathFromEnvVariable(envVarName);
-            
+
             return dotnetPath;
         }
 
@@ -293,12 +298,7 @@ namespace Microsoft.Build.Locator
             string[]? resolvedPaths = null;
             foreach (string dotnetPath in s_dotnetPathCandidates.Value)
             {
-                int rc = NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) => resolvedPaths = value);
-
-                if (rc == 0 && resolvedPaths != null && resolvedPaths.Length > 0)
-                {
-                    break;
-                }
+                NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) => resolvedPaths = value);
             }
 
             // Errors are automatically printed to stderr. We should not continue to try to output anything if we failed.
@@ -321,7 +321,7 @@ namespace Microsoft.Build.Locator
         private static string? FindDotnetPathFromEnvVariable(string environmentVariable)
         {
             string? dotnetPath = Environment.GetEnvironmentVariable(environmentVariable);
-            
+
             return string.IsNullOrEmpty(dotnetPath) ? null : ValidatePath(dotnetPath);
         }
 
