@@ -72,49 +72,86 @@ namespace Microsoft.Build.Locator
 
         public static IEnumerable<VisualStudioInstance> GetInstances(string workingDirectory, bool allowQueryAllRuntimes)
         {
-            HashSet<Version> versions = new();
-            foreach (var basePath in GetDotNetBasePaths(workingDirectory))
-            {
-                var dotnetSdk = GetInstance(basePath, allowQueryAllRuntimes);
-                if (dotnetSdk != null)
-                {
-                    // Only return an SDK once, even if it's installed in multiple locations.
-                    if (versions.Add(dotnetSdk.Version))
-                    {
-                        yield return dotnetSdk;
-                    }
-                }
-            }
-        }
-
-        private static IEnumerable<string> GetDotNetBasePaths(string workingDirectory)
-        {
+            string? bestSdkPath;
+            string[] allAvailableSdks;
             try
             {
                 AddUnmanagedDllResolver();
 
-                string? bestSDK = GetSdkFromGlobalSettings(workingDirectory);
-                if (!string.IsNullOrEmpty(bestSDK))
-                {
-                    yield return bestSDK;
-                }
-
-                string[] dotnetPaths = GetAllAvailableSDKs();
-                // We want to return the newest SDKs first, however, so iterate over the list in reverse order.
-                // If basePath is disqualified because it was later
-                // than the runtime version, this ensures that RegisterDefaults will return the latest valid
-                // SDK instead of the earliest installed.
-                for (int i = dotnetPaths.Length - 1; i >= 0; i--)
-                {
-                    if (dotnetPaths[i] != bestSDK)
-                    {
-                        yield return dotnetPaths[i];
-                    }
-                }
+                bestSdkPath = GetSdkFromGlobalSettings(workingDirectory);
+                allAvailableSdks = GetAllAvailableSDKs();
             }
             finally
             {
                 RemoveUnmanagedDllResolver();
+            }
+
+            Dictionary<Version, VisualStudioInstance?> versionInstanceMap = new();
+            foreach (var basePath in allAvailableSdks)
+            {
+                var dotnetSdk = GetInstance(basePath, allowQueryAllRuntimes);
+                if (dotnetSdk != null)
+                {
+                    // We want to return the best SDK first
+                    if (dotnetSdk.VisualStudioRootPath == bestSdkPath)
+                    {
+                        // We will add a null entry to the map to ensure we do not add the same SDK from a different location.
+                        versionInstanceMap[dotnetSdk.Version] = null;
+                        yield return dotnetSdk;
+                    }
+
+                    // Only add an SDK once, even if it's installed in multiple locations.
+                    if (!versionInstanceMap.ContainsKey(dotnetSdk.Version))
+                    {
+                        versionInstanceMap.Add(dotnetSdk.Version, dotnetSdk);
+                    }
+                }
+            }
+
+            // We want to return the newest SDKs first. Using OfType will remove the null entry added if we found the best SDK.
+            var instances = versionInstanceMap.Values.OfType<VisualStudioInstance>().OrderByDescending(i => i.Version);
+            foreach (var instance in instances)
+            {
+                yield return instance;
+            }
+
+            // Returns the list of all available SDKs ordered by ascending version.
+            static string[] GetAllAvailableSDKs()
+            {
+                string[]? resolvedPaths = null;
+                foreach (string dotnetPath in s_dotnetPathCandidates.Value)
+                {
+                    NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) => resolvedPaths = value);
+                }
+
+                // Errors are automatically printed to stderr. We should not continue to try to output anything if we failed.
+                return resolvedPaths ?? throw new InvalidOperationException(SdkResolutionExceptionMessage(nameof(NativeMethods.hostfxr_get_available_sdks)));
+            }
+
+            // Determines the directory location of the SDK accounting for global.json and multi-level lookup policy.
+            static string? GetSdkFromGlobalSettings(string workingDirectory)
+            {
+                string? resolvedSdk = null;
+                foreach (string dotnetPath in s_dotnetPathCandidates.Value)
+                {
+                    int rc = NativeMethods.hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, result: (key, value) =>
+                    {
+                        if (key == NativeMethods.hostfxr_resolve_sdk2_result_key_t.resolved_sdk_dir)
+                        {
+                            resolvedSdk = value;
+                        }
+                    });
+
+                    if (rc == 0)
+                    {
+                        SetEnvironmentVariableIfEmpty("DOTNET_HOST_PATH", Path.Combine(dotnetPath, ExeName));
+                        return resolvedSdk;
+                    }
+                }
+
+                return string.IsNullOrEmpty(resolvedSdk)
+                    ? throw new InvalidOperationException(SdkResolutionExceptionMessage(nameof(NativeMethods.hostfxr_resolve_sdk2)))
+                    : resolvedSdk;
             }
         }
 
@@ -183,35 +220,6 @@ namespace Microsoft.Build.Locator
         }
 
         private static string SdkResolutionExceptionMessage(string methodName) => $"Failed to find all versions of .NET Core MSBuild. Call to {methodName}. There may be more details in stderr.";
-
-        /// <summary>
-        /// Determines the directory location of the SDK accounting for
-        /// global.json and multi-level lookup policy.
-        /// </summary>
-        private static string? GetSdkFromGlobalSettings(string workingDirectory)
-        {
-            string? resolvedSdk = null;
-            foreach (string dotnetPath in s_dotnetPathCandidates.Value)
-            {
-                int rc = NativeMethods.hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, result: (key, value) =>
-                {
-                    if (key == NativeMethods.hostfxr_resolve_sdk2_result_key_t.resolved_sdk_dir)
-                    {
-                        resolvedSdk = value;
-                    }
-                });
-
-                if (rc == 0)
-                {
-                    SetEnvironmentVariableIfEmpty("DOTNET_HOST_PATH", Path.Combine(dotnetPath, ExeName));
-                    return resolvedSdk;
-                }
-            }
-
-            return string.IsNullOrEmpty(resolvedSdk)
-                ? throw new InvalidOperationException(SdkResolutionExceptionMessage(nameof(NativeMethods.hostfxr_resolve_sdk2)))
-                : resolvedSdk;
-        }
 
         private static IList<string> ResolveDotnetPathCandidates()
         {
@@ -288,21 +296,6 @@ namespace Microsoft.Build.Locator
             }
 
             return dotnetPath;
-        }
-
-        /// <summary>
-        /// Returns the list of all available SDKs ordered by ascending version.
-        /// </summary>
-        private static string[] GetAllAvailableSDKs()
-        {
-            string[]? resolvedPaths = null;
-            foreach (string dotnetPath in s_dotnetPathCandidates.Value)
-            {
-                NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) => resolvedPaths = value);
-            }
-
-            // Errors are automatically printed to stderr. We should not continue to try to output anything if we failed.
-            return resolvedPaths ?? throw new InvalidOperationException(SdkResolutionExceptionMessage(nameof(NativeMethods.hostfxr_get_available_sdks)));
         }
 
         /// <summary>
