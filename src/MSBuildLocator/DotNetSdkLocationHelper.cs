@@ -79,7 +79,7 @@ namespace Microsoft.Build.Locator
                 AddUnmanagedDllResolver();
 
                 bestSdkPath = GetSdkFromGlobalSettings(workingDirectory);
-                allAvailableSdks = GetAllAvailableSDKs();
+                allAvailableSdks = GetAllAvailableSDKs().ToArray();
             }
             finally
             {
@@ -116,16 +116,30 @@ namespace Microsoft.Build.Locator
             }
 
             // Returns the list of all available SDKs ordered by ascending version.
-            static string[] GetAllAvailableSDKs()
+            static IEnumerable<string> GetAllAvailableSDKs()
             {
+                bool foundSdks = false;
                 string[]? resolvedPaths = null;
                 foreach (string dotnetPath in s_dotnetPathCandidates.Value)
                 {
-                    NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) => resolvedPaths = value);
+                    int rc = NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) => resolvedPaths = value);
+
+                    if (rc == 0 && resolvedPaths != null)
+                    {
+                        foundSdks = true;
+
+                        foreach (string path in resolvedPaths)
+                        {
+                            yield return path;
+                        }
+                    }
                 }
 
                 // Errors are automatically printed to stderr. We should not continue to try to output anything if we failed.
-                return resolvedPaths ?? throw new InvalidOperationException(SdkResolutionExceptionMessage(nameof(NativeMethods.hostfxr_get_available_sdks)));
+                if (!foundSdks)
+                {
+                    throw new InvalidOperationException(SdkResolutionExceptionMessage(nameof(NativeMethods.hostfxr_get_available_sdks)));
+                }
             }
 
             // Determines the directory location of the SDK accounting for global.json and multi-level lookup policy.
