@@ -37,6 +37,14 @@ namespace Microsoft.Build.Locator
         ///     Defaults to <see langword="false"/>. Set this to <see langword="true"/> only if your application has special logic to handle loading an incompatible SDK, such as launching a new process with the target SDK's runtime.
         /// </remarks.
         public bool AllowAllRuntimeVersions { get; set; } = false;
+
+        /// <summary>
+        ///     Allow discovery of .NET SDK versions from all discovered dotnet install locations.
+        /// </summary>
+        /// <remarks>
+        ///     Defaults to <see langword="false"/>. Set this to <see langword="true"/> only if you do not mind behaving differently than the dotnet muxer.
+        /// </remarks.
+        public bool AllowAllDotnetLocations { get; set; } = false;
 #endif
 
         /// <summary>

@@ -70,7 +70,7 @@ namespace Microsoft.Build.Locator
                 discoveryType: DiscoveryType.DotNetSdk);
         }
 
-        public static IEnumerable<VisualStudioInstance> GetInstances(string workingDirectory, bool allowQueryAllRuntimes)
+        public static IEnumerable<VisualStudioInstance> GetInstances(string workingDirectory, bool allowQueryAllRuntimes, bool allowAllDotnetLocations)
         {
             string? bestSdkPath;
             string[] allAvailableSdks;
@@ -79,7 +79,7 @@ namespace Microsoft.Build.Locator
                 AddUnmanagedDllResolver();
 
                 bestSdkPath = GetSdkFromGlobalSettings(workingDirectory);
-                allAvailableSdks = GetAllAvailableSDKs().ToArray();
+                allAvailableSdks = GetAllAvailableSDKs(allowAllDotnetLocations).ToArray();
             }
             finally
             {
@@ -116,7 +116,7 @@ namespace Microsoft.Build.Locator
             }
 
             // Returns the list of all available SDKs ordered by ascending version.
-            static IEnumerable<string> GetAllAvailableSDKs()
+            static IEnumerable<string> GetAllAvailableSDKs(bool allowAllDotnetLocations)
             {
                 bool foundSdks = false;
                 string[]? resolvedPaths = null;
@@ -131,6 +131,11 @@ namespace Microsoft.Build.Locator
                         foreach (string path in resolvedPaths)
                         {
                             yield return path;
+                        }
+
+                        if (resolvedPaths.Length > 0 && !allowAllDotnetLocations)
+                        {
+                            break;
                         }
                     }
                 }
