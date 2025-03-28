@@ -101,10 +101,7 @@ namespace Microsoft.Build.Locator
                     }
 
                     // Only add an SDK once, even if it's installed in multiple locations.
-                    if (!versionInstanceMap.ContainsKey(dotnetSdk.Version))
-                    {
-                        versionInstanceMap.Add(dotnetSdk.Version, dotnetSdk);
-                    }
+                    versionInstanceMap.TryAdd(dotnetSdk.Version, dotnetSdk);
                 }
             }
 
