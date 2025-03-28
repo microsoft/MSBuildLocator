@@ -42,7 +42,7 @@ namespace Microsoft.Build.Locator
         ///     Allow discovery of .NET SDK versions from all discovered dotnet install locations.
         /// </summary>
         /// <remarks>
-        ///     Defaults to <see langword="false"/>. Set this to <see langword="true"/> only if you do not mind behaving differently than the dotnet muxer.
+        ///     Defaults to <see langword="false"/>. Set this to <see langword="true"/> only if you do not mind behaving differently than a command-line dotnet invocation.
         /// </remarks.
         public bool AllowAllDotnetLocations { get; set; } = false;
 #endif
