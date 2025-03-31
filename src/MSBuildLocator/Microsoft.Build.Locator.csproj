@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>net46;net6.0;net9.0</TargetFrameworks>
+    <TargetFrameworks>net46;net8.0</TargetFrameworks>
     <DebugType>full</DebugType>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <AssemblyName>Microsoft.Build.Locator</AssemblyName>
