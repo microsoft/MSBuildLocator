@@ -41,11 +41,5 @@ namespace Microsoft.Build.Locator
 
         [DllImport(HostFxrName, CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern int hostfxr_get_available_sdks(string exe_dir, hostfxr_get_available_sdks_result_fn result);
-
-        [DllImport("libc", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern IntPtr realpath(string path, IntPtr buffer);
-
-        [DllImport("libc", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void free(IntPtr ptr);
     }
 }

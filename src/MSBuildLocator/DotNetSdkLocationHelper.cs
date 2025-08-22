@@ -256,7 +256,7 @@ namespace Microsoft.Build.Locator
             {
                 if (!IsWindows)
                 {
-                    hostPath = realpath(hostPath) ?? hostPath;
+                    hostPath = File.ResolveLinkTarget(hostPath, true)?.FullName ?? hostPath;
                 }
 
                 AddIfValid(Path.GetDirectoryName(hostPath));
@@ -314,19 +314,6 @@ namespace Microsoft.Build.Locator
             return dotnetPath;
         }
 
-        /// <summary>
-        /// This native method call determines the actual location of path, including
-        /// resolving symbolic links.
-        /// </summary>
-        private static string? realpath(string path)
-        {
-            IntPtr ptr = NativeMethods.realpath(path, IntPtr.Zero);
-            string? result = Marshal.PtrToStringAuto(ptr);
-            NativeMethods.free(ptr);
-
-            return result;
-        }
-
         private static string? FindDotnetPathFromEnvVariable(string environmentVariable)
         {
             string? dotnetPath = Environment.GetEnvironmentVariable(environmentVariable);
@@ -349,7 +336,7 @@ namespace Microsoft.Build.Locator
             {
                 if (!IsWindows)
                 {
-                    fullPathToDotnetFromRoot = realpath(fullPathToDotnetFromRoot) ?? fullPathToDotnetFromRoot;
+                    fullPathToDotnetFromRoot = File.ResolveLinkTarget(fullPathToDotnetFromRoot, true)?.FullName ?? fullPathToDotnetFromRoot;
                     return File.Exists(fullPathToDotnetFromRoot) ? Path.GetDirectoryName(fullPathToDotnetFromRoot) : null;
                 }
 
