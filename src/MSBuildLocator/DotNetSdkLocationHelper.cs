@@ -116,10 +116,9 @@ namespace Microsoft.Build.Locator
             static IEnumerable<string> GetAllAvailableSDKs(bool allowAllDotnetLocations)
             {
                 bool foundSdks = false;
-                string[]? resolvedPaths = null;
                 foreach (string dotnetPath in s_dotnetPathCandidates.Value)
                 {
-                    int rc = NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, result: (key, value) => resolvedPaths = value);
+                    int rc = NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, out string[]? resolvedPaths);
 
                     if (rc == 0 && resolvedPaths != null)
                     {
@@ -150,13 +149,7 @@ namespace Microsoft.Build.Locator
                 string? resolvedSdk = null;
                 foreach (string dotnetPath in s_dotnetPathCandidates.Value)
                 {
-                    int rc = NativeMethods.hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, result: (key, value) =>
-                    {
-                        if (key == NativeMethods.hostfxr_resolve_sdk2_result_key_t.resolved_sdk_dir)
-                        {
-                            resolvedSdk = value;
-                        }
-                    });
+                    int rc = NativeMethods.hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, out resolvedSdk, out _);
 
                     if (rc == 0)
                     {

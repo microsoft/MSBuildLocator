@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFrameworks>net46;net8.0</TargetFrameworks>
@@ -14,6 +14,7 @@
     <PackageTags>msbuildlocator;locator;buildlocator</PackageTags>
     <EnablePackageValidation>true</EnablePackageValidation>
     <PackageValidationBaselineVersion>1.6.1</PackageValidationBaselineVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)'=='net46'">
     <DefineConstants>$(DefineConstants);FEATURE_VISUALSTUDIOSETUP</DefineConstants>
