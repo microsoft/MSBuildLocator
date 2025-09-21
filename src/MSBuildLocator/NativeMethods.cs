@@ -46,23 +46,23 @@ namespace Microsoft.Build.Locator
             }
         }
 
-        [LibraryImport(HostFxrName, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(HostFxrName, StringMarshallingCustomType = typeof(AutoStringMarshaller))]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe partial int hostfxr_resolve_sdk2(
             string exe_dir,
             string working_dir,
             hostfxr_resolve_sdk2_flags_t flags,
-            delegate* unmanaged[Cdecl]<hostfxr_resolve_sdk2_result_key_t, ushort*, void> result);
+            delegate* unmanaged[Cdecl]<hostfxr_resolve_sdk2_result_key_t, void*, void> result);
 
         [ThreadStatic]
         private static string t_resolve_sdk2_resolved_sdk_dir, t_resolve_sdk2_global_json_path;
 
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-        private static unsafe void hostfxr_resolve_sdk2_callback(hostfxr_resolve_sdk2_result_key_t key, ushort* value)
+        private static unsafe void hostfxr_resolve_sdk2_callback(hostfxr_resolve_sdk2_result_key_t key, void* value)
         {
             Debug.Assert(t_resolve_sdk2_resolved_sdk_dir is null);
             Debug.Assert(t_resolve_sdk2_global_json_path is null);
-            string str = Utf16StringMarshaller.ConvertToManaged(value);
+            string str = AutoStringMarshaller.ConvertToManaged(value);
             switch (key)
             {
                 case hostfxr_resolve_sdk2_result_key_t.resolved_sdk_dir:
@@ -92,23 +92,32 @@ namespace Microsoft.Build.Locator
             }
         }
 
-        //[DllImport(HostFxrName, CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        [LibraryImport(HostFxrName, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(HostFxrName, StringMarshallingCustomType = typeof(AutoStringMarshaller))]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        private static unsafe partial int hostfxr_get_available_sdks(string exe_dir, delegate* unmanaged[Cdecl]<int, ushort**, void> result);
+        private static unsafe partial int hostfxr_get_available_sdks(string exe_dir, delegate* unmanaged[Cdecl]<int, void**, void> result);
 
         [ThreadStatic]
         private static string[] t_get_available_sdks_result;
 
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-        private static unsafe void hostfxr_get_available_sdks_callback(int count, ushort** sdks)
+        private static unsafe void hostfxr_get_available_sdks_callback(int count, void** sdks)
         {
             string[] result = new string[count];
             for (int i = 0; i < count; i++)
             {
-                result[i] = Utf16StringMarshaller.ConvertToManaged(sdks[i]);
+                result[i] = AutoStringMarshaller.ConvertToManaged(sdks[i]);
             }
             t_get_available_sdks_result = result;
+        }
+
+        [CustomMarshaller(typeof(string), MarshalMode.Default, typeof(AutoStringMarshaller))]
+        internal static unsafe class AutoStringMarshaller
+        {
+            public static void* ConvertToUnmanaged(string s) => (void*)Marshal.StringToCoTaskMemAuto(s);
+
+            public static void Free(void* ptr) => Marshal.FreeCoTaskMem((nint)ptr);
+
+            public static string ConvertToManaged(void* ptr) => Marshal.PtrToStringAuto((nint)ptr);
         }
     }
 }
