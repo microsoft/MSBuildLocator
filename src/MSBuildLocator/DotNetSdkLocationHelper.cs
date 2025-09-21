@@ -17,11 +17,12 @@ using System.Text.RegularExpressions;
 
 namespace Microsoft.Build.Locator
 {
-    internal static class DotNetSdkLocationHelper
+    internal static partial class DotNetSdkLocationHelper
     {
-        private static readonly Regex VersionRegex = new Regex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline);
-        private static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        private static readonly string ExeName = IsWindows ? "dotnet.exe" : "dotnet";
+        [GeneratedRegex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline)]
+        private static partial Regex VersionRegex();
+
+        private static readonly string ExeName = OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet";
         private static readonly Lazy<IList<string>> s_dotnetPathCandidates = new(() => ResolveDotnetPathCandidates());
 
         public static VisualStudioInstance? GetInstance(string dotNetSdkPath, bool allowQueryAllRuntimeVersions)
@@ -38,7 +39,7 @@ namespace Microsoft.Build.Locator
             }
 
             // Preview versions contain a hyphen after the numeric part of the version. Version.TryParse doesn't accept that.
-            Match versionMatch = VersionRegex.Match(File.ReadAllText(versionPath));
+            Match versionMatch = VersionRegex().Match(File.ReadAllText(versionPath));
 
             if (!versionMatch.Success)
             {
@@ -171,7 +172,7 @@ namespace Microsoft.Build.Locator
         private static void ModifyUnmanagedDllResolver(Action<AssemblyLoadContext> resolverAction)
         {
             // For Windows hostfxr is loaded in the process.
-            if (!IsWindows)
+            if (!OperatingSystem.IsWindows())
             {
                 var loadContext = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
                 if (loadContext != null)
@@ -190,9 +191,9 @@ namespace Microsoft.Build.Locator
             }
 
             string hostFxrLibName =
-                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                OperatingSystem.IsWindows() ?
                 "hostfxr.dll" :
-                RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "libhostfxr.dylib" : "libhostfxr.so";
+                OperatingSystem.IsMacOS() ? "libhostfxr.dylib" : "libhostfxr.so";
             string hostFxrRoot = string.Empty;
 
             // Get the dotnet path candidates
@@ -247,7 +248,7 @@ namespace Microsoft.Build.Locator
             string? hostPath = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
             if (!string.IsNullOrEmpty(hostPath) && File.Exists(hostPath))
             {
-                if (!IsWindows)
+                if (!OperatingSystem.IsWindows())
                 {
                     hostPath = File.ResolveLinkTarget(hostPath, true)?.FullName ?? hostPath;
                 }
@@ -327,7 +328,7 @@ namespace Microsoft.Build.Locator
             string fullPathToDotnetFromRoot = Path.Combine(dotnetPath, ExeName);
             if (File.Exists(fullPathToDotnetFromRoot))
             {
-                if (!IsWindows)
+                if (!OperatingSystem.IsWindows())
                 {
                     fullPathToDotnetFromRoot = File.ResolveLinkTarget(fullPathToDotnetFromRoot, true)?.FullName ?? fullPathToDotnetFromRoot;
                     return File.Exists(fullPathToDotnetFromRoot) ? Path.GetDirectoryName(fullPathToDotnetFromRoot) : null;
