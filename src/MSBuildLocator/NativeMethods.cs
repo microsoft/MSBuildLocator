@@ -28,7 +28,7 @@ namespace Microsoft.Build.Locator
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
         internal delegate void hostfxr_get_available_sdks_result_fn(
-                hostfxr_resolve_sdk2_result_key_t key,
+                int sdk_count,
                 [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)]
                 string[] value);
 
