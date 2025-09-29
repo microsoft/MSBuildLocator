@@ -22,8 +22,8 @@ namespace Microsoft.Build.Locator
         [GeneratedRegex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline)]
         private static partial Regex VersionRegex();
 
-        private static readonly string ExeName = OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet";
-        private static readonly Lazy<IList<string>> s_dotnetPathCandidates = new(() => ResolveDotnetPathCandidates());
+        private static string ExeName => OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet";
+        private static readonly Lazy<List<string>> s_dotnetPathCandidates = new(() => ResolveDotnetPathCandidates());
 
         public static VisualStudioInstance? GetInstance(string dotNetSdkPath, bool allowQueryAllRuntimeVersions)
         {
@@ -231,12 +231,12 @@ namespace Microsoft.Build.Locator
 
         private static string SdkResolutionExceptionMessage(string methodName) => $"Failed to find all versions of .NET Core MSBuild. Call to {methodName}. There may be more details in stderr.";
 
-        private static IList<string> ResolveDotnetPathCandidates()
+        private static List<string> ResolveDotnetPathCandidates()
         {
             var pathCandidates = new List<string>();
             AddIfValid(GetDotnetPathFromROOT());
 
-            string? dotnetExePath = GetCurrentProcessPath();
+            string? dotnetExePath = Environment.ProcessPath;
             bool isRunFromDotnetExecutable = !string.IsNullOrEmpty(dotnetExePath)
                 && Path.GetFileName(dotnetExePath).Equals(ExeName, StringComparison.InvariantCultureIgnoreCase);
 
@@ -282,8 +282,6 @@ namespace Microsoft.Build.Locator
 
             return dotnetPath;
         }
-
-        private static string? GetCurrentProcessPath() => Environment.ProcessPath;
 
         private static string? GetDotnetPathFromPATH()
         {
