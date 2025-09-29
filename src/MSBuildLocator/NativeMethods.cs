@@ -60,8 +60,6 @@ namespace Microsoft.Build.Locator
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe void hostfxr_resolve_sdk2_callback(hostfxr_resolve_sdk2_result_key_t key, void* value)
         {
-            Debug.Assert(t_resolve_sdk2_resolved_sdk_dir is null);
-            Debug.Assert(t_resolve_sdk2_global_json_path is null);
             string str = AutoStringMarshaller.ConvertToManaged(value);
             switch (key)
             {
