@@ -11,6 +11,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using System.Text;
 using System.Text.RegularExpressions;
 
 #nullable enable
@@ -117,11 +118,13 @@ namespace Microsoft.Build.Locator
             static IEnumerable<string> GetAllAvailableSDKs(bool allowAllDotnetLocations)
             {
                 bool foundSdks = false;
+                int rc = 0;
+                StringBuilder? errorMessage = null;
                 foreach (string dotnetPath in s_dotnetPathCandidates.Value)
                 {
-                    int rc = NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, out string[]? resolvedPaths);
+                    rc = NativeMethods.hostfxr_get_available_sdks(exe_dir: dotnetPath, out string[]? resolvedPaths, out errorMessage);
 
-                    if (rc == 0 && resolvedPaths != null)
+                    if (resolvedPaths != null)
                     {
                         foundSdks = true;
 
@@ -140,7 +143,7 @@ namespace Microsoft.Build.Locator
                 // Errors are automatically printed to stderr. We should not continue to try to output anything if we failed.
                 if (!foundSdks)
                 {
-                    throw new InvalidOperationException(SdkResolutionExceptionMessage(nameof(NativeMethods.hostfxr_get_available_sdks)));
+                    throw new InvalidOperationException(SdkResolutionExceptionMessage(nameof(NativeMethods.hostfxr_get_available_sdks), rc, errorMessage));
                 }
             }
 
@@ -148,9 +151,11 @@ namespace Microsoft.Build.Locator
             static string? GetSdkFromGlobalSettings(string workingDirectory)
             {
                 string? resolvedSdk = null;
+                int rc = 0;
+                StringBuilder? errorMessage = null;
                 foreach (string dotnetPath in s_dotnetPathCandidates.Value)
                 {
-                    int rc = NativeMethods.hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, out resolvedSdk, out _);
+                    rc = NativeMethods.hostfxr_resolve_sdk2(exe_dir: dotnetPath, working_dir: workingDirectory, flags: 0, out resolvedSdk, out _, out errorMessage);
 
                     if (rc == 0)
                     {
@@ -160,7 +165,7 @@ namespace Microsoft.Build.Locator
                 }
 
                 return string.IsNullOrEmpty(resolvedSdk)
-                    ? throw new InvalidOperationException(SdkResolutionExceptionMessage(nameof(NativeMethods.hostfxr_resolve_sdk2)))
+                    ? throw new InvalidOperationException(SdkResolutionExceptionMessage(nameof(NativeMethods.hostfxr_resolve_sdk2), rc, errorMessage))
                     : resolvedSdk;
             }
         }
@@ -229,7 +234,8 @@ namespace Microsoft.Build.Locator
             throw new InvalidOperationException(error);
         }
 
-        private static string SdkResolutionExceptionMessage(string methodName) => $"Failed to find all versions of .NET Core MSBuild. Call to {methodName}. There may be more details in stderr.";
+        private static string SdkResolutionExceptionMessage(string methodName, int rc, StringBuilder? errorMessage) =>
+            $"Error while calling hostfxr function {methodName}. Error code: {rc} Detailed error: {errorMessage}";
 
         private static List<string> ResolveDotnetPathCandidates()
         {

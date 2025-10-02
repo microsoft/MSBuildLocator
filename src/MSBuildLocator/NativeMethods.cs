@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 
 namespace Microsoft.Build.Locator
 {
@@ -25,7 +26,7 @@ namespace Microsoft.Build.Locator
             global_json_path = 1,
         };
 
-        internal static int hostfxr_resolve_sdk2(string exe_dir, string working_dir, hostfxr_resolve_sdk2_flags_t flags, out string resolved_sdk_dir, out string global_json_path)
+        internal static int hostfxr_resolve_sdk2(string exe_dir, string working_dir, hostfxr_resolve_sdk2_flags_t flags, out string resolved_sdk_dir, out string global_json_path, out StringBuilder errorMessage)
         {
             Debug.Assert(t_resolve_sdk2_resolved_sdk_dir is null);
             Debug.Assert(t_resolve_sdk2_global_json_path is null);
@@ -33,9 +34,11 @@ namespace Microsoft.Build.Locator
             {
                 unsafe
                 {
+                    using var errorHandler = new ErrorHandler();
                     int result = hostfxr_resolve_sdk2(exe_dir, working_dir, flags, &hostfxr_resolve_sdk2_callback);
                     resolved_sdk_dir = t_resolve_sdk2_resolved_sdk_dir;
                     global_json_path = t_resolve_sdk2_global_json_path;
+                    errorMessage = t_hostfxr_error_builder;
                     return result;
                 }
             }
@@ -72,15 +75,17 @@ namespace Microsoft.Build.Locator
             }
         }
 
-        internal static int hostfxr_get_available_sdks(string exe_dir, out string[] sdks)
+        internal static int hostfxr_get_available_sdks(string exe_dir, out string[] sdks, out StringBuilder errorMessage)
         {
             Debug.Assert(t_get_available_sdks_result is null);
             try
             {
                 unsafe
                 {
+                    using var errorHandler = new ErrorHandler();
                     int result = hostfxr_get_available_sdks(exe_dir, &hostfxr_get_available_sdks_callback);
                     sdks = t_get_available_sdks_result;
+                    errorMessage = t_hostfxr_error_builder;
                     return result;
                 }
             }
@@ -108,6 +113,29 @@ namespace Microsoft.Build.Locator
             t_get_available_sdks_result = result;
         }
 
+        [LibraryImport(HostFxrName)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        private static unsafe partial delegate* unmanaged[Cdecl]<void*, void> hostfxr_set_error_writer(delegate* unmanaged[Cdecl]<void*, void> error_writer);
+
+        [ThreadStatic]
+        private static StringBuilder t_hostfxr_error_builder;
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+        private static unsafe void hostfxr_error_writer_callback(void* message)
+        {
+            t_hostfxr_error_builder ??= new StringBuilder();
+            if (OperatingSystem.IsWindows())
+            {
+                // Avoid allocating temporary string on Windows.
+                t_hostfxr_error_builder.Append(MemoryMarshal.CreateReadOnlySpanFromNullTerminated((char*)message));
+                t_hostfxr_error_builder.AppendLine();
+            }
+            else
+            {
+                t_hostfxr_error_builder.AppendLine(Utf8StringMarshaller.ConvertToManaged((byte*)message));
+            }
+        }
+
         [CustomMarshaller(typeof(string), MarshalMode.Default, typeof(AutoStringMarshaller))]
         internal static unsafe class AutoStringMarshaller
         {
@@ -116,6 +144,23 @@ namespace Microsoft.Build.Locator
             public static void Free(void* ptr) => Marshal.FreeCoTaskMem((nint)ptr);
 
             public static string ConvertToManaged(void* ptr) => Marshal.PtrToStringAuto((nint)ptr);
+        }
+
+        private unsafe readonly ref struct ErrorHandler
+        {
+            private readonly delegate* unmanaged[Cdecl]<void*, void> _previousCallback;
+
+            public ErrorHandler()
+            {
+                Debug.Assert(t_hostfxr_error_builder is null);
+                _previousCallback = hostfxr_set_error_writer(&hostfxr_error_writer_callback);
+            }
+
+            public void Dispose()
+            {
+                hostfxr_set_error_writer(_previousCallback);
+                t_hostfxr_error_builder = null;
+            }
         }
     }
 }
