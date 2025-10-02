@@ -57,7 +57,7 @@ extends:
             displayName: 'Upload logs to drop'
             targetPath: '$(Build.ArtifactStagingDirectory)\logs'
             artifactName: logs
-            condition: succeededOrFailed()
+            condition: always()
         steps:
         - task: MicroBuildSigningPlugin@1
           inputs:
@@ -102,6 +102,7 @@ extends:
 
         - task: CopyFiles@2
           displayName: 'Copy logs to drop'
+          condition: always()
           inputs:
             Contents: '**\*.*log'
             TargetFolder: '$(Build.ArtifactStagingDirectory)\logs'
