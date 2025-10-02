@@ -59,10 +59,17 @@ extends:
             artifactName: logs
             condition: succeededOrFailed()
         steps:
-        - task: MicroBuildSigningPlugin@1
+        - task: MicroBuildSigningPlugin@4
+          displayName: Install MicroBuild plugin
           inputs:
-            signType: '$(SignType)'
+            signType: ${{ parameters.signTypeParameter }}
             zipSources: true
+            feedSource: https://devdiv.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+            ${{ if and(eq(parameters.signTypeParameter, 'real'), eq(variables['System.TeamProject'], 'DevDiv')) }}:
+              ConnectedPMEServiceName: 6cc74545-d7b9-4050-9dfa-ebefcc8961ea
+          env:
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          condition: and(succeeded(), in('${{ parameters.signTypeParameter }}', 'test', 'real'))
 
         - task: MSBuild@1
           displayName: '/t:Pack'
