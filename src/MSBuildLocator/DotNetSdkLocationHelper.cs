@@ -235,7 +235,7 @@ namespace Microsoft.Build.Locator
         }
 
         private static string SdkResolutionExceptionMessage(string methodName, int rc, StringBuilder? errorMessage) =>
-            $"Failed to find all versions of .NET Core MSBuild. Method called: {methodName}. Error code: {rc} Detailed error: {errorMessage}";
+            $"Error while calling hostfxr function {methodName}. Error code: {rc} Detailed error: {errorMessage}";
 
         private static List<string> ResolveDotnetPathCandidates()
         {
