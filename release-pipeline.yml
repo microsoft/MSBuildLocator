@@ -1,0 +1,88 @@
+trigger: none
+
+resources:
+  pipelines:
+  - pipeline: microsoft_MSBuildLocator
+    source: microsoft.MSBuildLocator
+    trigger:
+      enabled: false
+
+variables:
+  SymbolsAgentPath: '$(System.DefaultWorkingDirectory)\_$(Build.DefinitionName)\Symbols'
+  SymbolsEmailContacts: 'angerlic'
+  SymbolsFeatureName: 'MSBuild'
+  SymbolsProject: 'DDE'
+  SymbolsUncPath: '\\cpvsbuild\drops\MSBuild\symbols\$(Build.DefinitionName)\$(Build.BuildNumber)\symbols.archive'
+  TeamName: 'msbuild'
+  VstsDropNames: 'Products/DevDiv/Microsoft/msbuild/$(Build.SourceBranchName)/$(Build.BuildNumber)/$(Build.BuildId)'
+
+stages:
+- stage: RetainBuild
+  displayName: 'Retain build'
+  jobs:
+  - job: RetainBuildJob
+    displayName: 'Run on agent'
+    pool:
+      name: 'VSEngSS-MicroBuild2022-1ES'
+    steps:
+    - task: MicroBuildArchiveSymbols@6
+      displayName: 'Archive $(SymbolsFeatureName) on Symweb'
+      inputs:
+        SymbolsFeatureName: '$(SymbolsFeatureName)'
+        SymbolsProject: '$(SymbolsProject)'
+        SymbolsAgentPath: '$(SymbolsAgentPath)'
+        SubmitToInternet: true
+        ExpirationInDays: '5475'
+        azureSubscription: 'VSEng-SymbolsUpload'
+      env:
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+    - task: MicroBuildRetainVstsDrops@1
+      displayName: 'Retain VSTS Drops'
+      enabled: false
+      inputs:
+        DropNames: '$(VstsDropNames)'
+        DropServiceUri: 'https://devdiv.artifacts.visualstudio.com/DefaultCollection'
+
+- stage: PublicRelease
+  displayName: 'Public release'
+  dependsOn: RetainBuild
+  condition: succeeded()
+  jobs:
+  - job: PushToNuGet
+    displayName: 'Push to nuget.org'
+    pool:
+      name: 'VSEngSS-MicroBuild2022-1ES'
+    steps:
+    - task: NuGetCommand@2
+      displayName: 'NuGet push'
+      inputs:
+        command: 'push'
+        packagesToPush: '$(Pipeline.Workspace)/microsoft_MSBuildLocator/pkg/Microsoft.Build.Locator*.nupkg'
+        nuGetFeedType: 'external'
+        publishFeedCredentials: 'MSBuild-Locator'
+        verbosityPush: 'Detailed'
+
+  - job: PublicNuGetRelease
+    displayName: 'Public NuGet release'
+    dependsOn: PushToNuGet
+    pool: server
+    steps:
+    - task: ManualValidation@0
+      displayName: 'Push packages to NuGet'
+      inputs:
+        instructions: |
+          https://microsoft.sharepoint.com/teams/toolsforeng/_layouts/OneNote.aspx?id=%2Fteams%2Ftoolsforeng%2FOne%20Note%2FToolsForSoftwareEngineers&wd=target%28Build%20Tools%2FMSBuild%2FGitHub.one%7CFF6DC598-65EC-43D5-AB29-DB38FEB82BC8%2FMyGet%20Feed%7CFAFC6258-899D-48D4-8DB4-892396202C9C%2F%29
+          onenote:https://microsoft.sharepoint.com/teams/toolsforeng/One%20Note/ToolsForSoftwareEngineers/Build%20Tools/MSBuild/GitHub.one#MyGet%20Feed&section-id={FF6DC598-65EC-43D5-AB29-DB38FEB82BC8}&page-id={FAFC6258-89
+        onTimeout: 'reject'
+
+  - job: GitHubRelease
+    displayName: 'GitHub release'
+    dependsOn: PublicNuGetRelease
+    pool: server
+    steps:
+    - task: ManualValidation@0
+      displayName: 'Create GitHub release'
+      inputs:
+        instructions: 'Create the GitHub release manually'
+        onTimeout: 'reject'
