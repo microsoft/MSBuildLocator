@@ -9,10 +9,8 @@ resources:
 
 variables:
   SymbolsAgentPath: '$(System.DefaultWorkingDirectory)\_$(Build.DefinitionName)\Symbols'
-  SymbolsEmailContacts: 'angerlic'
   SymbolsFeatureName: 'MSBuild'
   SymbolsProject: 'DDE'
-  SymbolsUncPath: '\\cpvsbuild\drops\MSBuild\symbols\$(Build.DefinitionName)\$(Build.BuildNumber)\symbols.archive'
   TeamName: 'msbuild'
   VstsDropNames: 'Products/DevDiv/Microsoft/msbuild/$(Build.SourceBranchName)/$(Build.BuildNumber)/$(Build.BuildId)'
 
