@@ -14,7 +14,8 @@
             '%(PackageReference.Identity)' == 'Microsoft.Build.Runtime' or
             '%(PackageReference.Identity)' == 'Microsoft.Build.Localization' or
             '%(PackageReference.Identity)' == 'Microsoft.Build.Engine' or
-            '%(PackageReference.Identity)' == 'Microsoft.NET.StringTools'
+            '%(PackageReference.Identity)' == 'Microsoft.NET.StringTools' or
+            '%(PackageReference.Identity)' == 'NuGet.Frameworks'
           )"/>
     </ItemGroup>
     <Error
