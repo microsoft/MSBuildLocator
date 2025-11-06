@@ -14,10 +14,12 @@ pipelines:
           lastModifiedDate: 2024-08-21
         policheck:
           lastModifiedDate: 2024-09-24
+        accessibilityinsights:
+          lastModifiedDate: 2025-11-06
       binary:
         credscan:
           lastModifiedDate: 2024-08-21
         binskim:
-          lastModifiedDate: 2024-08-21
+          lastModifiedDate: 2025-11-06
         spotbugs:
           lastModifiedDate: 2024-08-21
