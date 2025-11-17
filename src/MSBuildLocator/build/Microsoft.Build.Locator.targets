@@ -17,6 +17,7 @@
     </ItemGroup>
 
     <Error
+      Condition="@(_DistinctMSBuildPackagesReferencedPoorly->Count()) > 0"
       Code="MSBL001"
       Text="A PackageReference to the package '%(_DistinctMSBuildPackagesReferencedPoorly.NuGetPackageId)' at version '%(_DistinctMSBuildPackagesReferencedPoorly.NuGetPackageVersion)' is present in this project without ExcludeAssets=&quot;runtime&quot; set. This can cause errors at run-time due to MSBuild assembly-loading."
       HelpLink="https://aka.ms/msbuild/locator/diagnostics/MSBL001"
