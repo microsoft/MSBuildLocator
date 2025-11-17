@@ -14,11 +14,12 @@
       <_MSBuildAssembliesCopyLocalItems Include="@(RuntimeCopyLocalItems->WithMetadataValue('NuGetPackageId', 'NuGet.Frameworks'))" />
       <MSBuildAssembliesCopyLocalItems Include="@(_MSBuildAssembliesCopyLocalItems->WithMetadataValue('CopyLocal', 'true')->WithMetadataValue('AssetType', 'runtime'))" />
       <_DistinctMSBuildPackagesReferencedPoorly Include="@(MSBuildAssembliesCopyLocalItems->Metadata('NuGetPackageId')->Distinct())" />
-      <_DistinctPackagesWithVersions Include="@(_DistinctMSBuildPackagesReferencedPoorly->'%(NuGetPackageId)@%(NuGetPackageVersion)')" />
     </ItemGroup>
 
     <Error
-      Condition="@(_DistinctPackagesWithVersions->Count()) > 0"
-      Text="A PackageReference to an MSBuild run-time package without ExcludeAssets=&quot;runtime&quot; exists in your project. This will cause MSBuild run-time assemblies to be copied to your output directory, causing your application to load them at runtime. To use the copy of MSBuild registered by MSBuildLocator, set ExcludeAssets=&quot;runtime&quot; on the MSBuild PackageReferences. To disable this check, set the property DisableMSBuildAssemblyCopyCheck=true in your project file (not recommended as you must distributed all of MSBuild + associated toolset). Package(s) referenced: @(_DistinctPackagesWithVersions, ', ')" />
+      Code="MSBL001"
+      Text="A PackageReference to the package '%(_DistinctMSBuildPackagesReferencedPoorly.NuGetPackageId)' at version '%(_DistinctMSBuildPackagesReferencedPoorly.NuGetPackageVersion)' is present in this project without ExcludeAssets=&quot;runtime&quot; set. This can cause errors at run-time due to MSBuild assembly-loading."
+      HelpLink="https://aka.ms/msbuild/locator/diagnostics/MSBL001"
+      />
   </Target>
 </Project>
