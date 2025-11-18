@@ -12,6 +12,7 @@
     <Title>MSBuild Locator</Title>
     <Description>Package that assists in locating and using a copy of MSBuild installed as part of Visual Studio 2017 or higher or .NET Core SDK 2.1 or higher.</Description>
     <PackageTags>msbuildlocator;locator;buildlocator</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <EnablePackageValidation>true</EnablePackageValidation>
     <PackageValidationBaselineVersion>1.6.1</PackageValidationBaselineVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -25,14 +26,11 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MicroBuild.Core" Version="0.3.0" PrivateAssets="all" />
-    <Content Include="build\Microsoft.Build.Locator.props">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      <PackagePath>build\</PackagePath>
-    </Content>
-    <Content Include="build\Microsoft.Build.Locator.targets">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      <PackagePath>build\</PackagePath>
-    </Content>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="build\Microsoft.Build.Locator.props" Pack="true" PackagePath="build\" />
+    <None Include="build\Microsoft.Build.Locator.targets" Pack="true" PackagePath="build\" />
+    <None Include="build\Microsoft.Build.Locator.props" Pack="true" PackagePath="buildTransitive/" />
+    <None Include="build\Microsoft.Build.Locator.targets" Pack="true" PackagePath="buildTransitive/" />
   </ItemGroup>
   <ItemGroup>
     <FilesToSign Include="$(OutDir)\Microsoft.Build.Locator.dll">

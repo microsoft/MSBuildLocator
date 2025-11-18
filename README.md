@@ -8,7 +8,7 @@ That additional build logic is distributed with Visual Studio, with Visual Studi
 
 Loading MSBuild from Visual Studio also ensures that your application gets the same view of projects as `MSBuild.exe`, `dotnet build`, or Visual Studio, including bug fixes, feature additions, and performance improvements that may come from a newer MSBuild release.
 
-## How Locator searches for .NET SDK?
+## How does Locator search for the .NET SDK?
 
 MSBuild.Locator searches for the locally installed SDK based on the following priority:
 
