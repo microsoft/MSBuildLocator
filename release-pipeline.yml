@@ -8,7 +8,6 @@ resources:
       enabled: false
 
 variables:
-  SymbolsAgentPath: '$(System.DefaultWorkingDirectory)\_$(Build.DefinitionName)\Symbols'
   SymbolsFeatureName: 'MSBuild'
   SymbolsProject: 'DDE'
   TeamName: 'msbuild'
@@ -23,12 +22,16 @@ stages:
     pool:
       name: 'VSEngSS-MicroBuild2022-1ES'
     steps:
+    - download: microsoft_MSBuildLocator
+      displayName: 'Download Symbols Artifact'
+      artifact: Symbols
+
     - task: MicroBuildArchiveSymbols@6
       displayName: 'Archive $(SymbolsFeatureName) on Symweb'
       inputs:
         SymbolsFeatureName: '$(SymbolsFeatureName)'
         SymbolsProject: '$(SymbolsProject)'
-        SymbolsAgentPath: '$(SymbolsAgentPath)'
+        SymbolsAgentPath: '$(Pipeline.Workspace)/microsoft_MSBuildLocator/Symbols'
         SubmitToInternet: true
         ExpirationInDays: '5475'
         azureSubscription: 'VSEng-SymbolsUpload'
@@ -52,6 +55,9 @@ stages:
     pool:
       name: 'VSEngSS-MicroBuild2022-1ES'
     steps:
+    - download: microsoft_MSBuildLocator
+      displayName: 'Download NuGet Package Artifact'
+      artifact: pkg
     - task: NuGetCommand@2
       displayName: 'NuGet push'
       inputs:
