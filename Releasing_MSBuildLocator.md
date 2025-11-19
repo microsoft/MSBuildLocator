@@ -5,7 +5,7 @@ These instructions can only be followed by Microsoft-internal MSBuild maintainer
 1. Create a PR in https://github.com/microsoft/MSBuildLocator
 2. Have it reviewed.
 3. Once approved, merge it.
-4. Startt a pipeline build [here](https://dev.azure.com/devdiv/DevDiv/_build?definitionId=11881) for the commited changes.
+4. Start a pipeline build [here](https://dev.azure.com/devdiv/DevDiv/_build?definitionId=11881) for the commited changes.
 5. Once it succeeds, proceed to [our release pipeline](https://dev.azure.com/devdiv/DevDiv/_build?definitionId=27492) and queue release. Specify the build that succeeded.
 6. On Public NuGet release stage it will stop to request permission to continue. If you want to publish to NuGet, do so, clicking Approve.
    
