@@ -79,14 +79,3 @@ stages:
           https://microsoft.sharepoint.com/teams/toolsforeng/_layouts/OneNote.aspx?id=%2Fteams%2Ftoolsforeng%2FOne%20Note%2FToolsForSoftwareEngineers&wd=target%28Build%20Tools%2FMSBuild%2FGitHub.one%7CFF6DC598-65EC-43D5-AB29-DB38FEB82BC8%2FMyGet%20Feed%7CFAFC6258-899D-48D4-8DB4-892396202C9C%2F%29
           onenote:https://microsoft.sharepoint.com/teams/toolsforeng/One%20Note/ToolsForSoftwareEngineers/Build%20Tools/MSBuild/GitHub.one#MyGet%20Feed&section-id={FF6DC598-65EC-43D5-AB29-DB38FEB82BC8}&page-id={FAFC6258-89
         onTimeout: 'reject'
-
-  - job: GitHubRelease
-    displayName: 'GitHub release'
-    dependsOn: PublicNuGetRelease
-    pool: server
-    steps:
-    - task: ManualValidation@0
-      displayName: 'Create GitHub release'
-      inputs:
-        instructions: 'Create the GitHub release manually'
-        onTimeout: 'reject'

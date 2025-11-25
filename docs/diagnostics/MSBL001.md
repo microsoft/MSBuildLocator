@@ -2,11 +2,11 @@
 
 ## Error Message
 
-> A PackageReference to the package '{PackageId}' at version '{Version}' is present in this project without ExcludeAssets="runtime" set. This can cause errors at run-time due to MSBuild assembly-loading.
+> A PackageReference to the package '{PackageId}' at version '{Version}' is present in this project without ExcludeAssets="runtime" and PrivateAssets="all" set. This can cause errors at run-time due to MSBuild assembly-loading.
 
 ## Cause
 
-This error occurs when your project references MSBuild NuGet packages (such as `Microsoft.Build`, `Microsoft.Build.Framework`, `Microsoft.Build.Utilities.Core`, etc.) without excluding their runtime assets. When you use Microsoft.Build.Locator, you want MSBuildLocator to load MSBuild assemblies from an installed Visual Studio or .NET SDK instance, not from the NuGet packages in your output directory.
+This error occurs when your project references MSBuild NuGet packages (such as `Microsoft.Build`, `Microsoft.Build.Framework`, `Microsoft.Build.Utilities.Core`, etc.) without excluding their runtime assets and marking them as private. When you use Microsoft.Build.Locator, you want MSBuildLocator to load MSBuild assemblies from an installed Visual Studio or .NET SDK instance, not from the NuGet packages in your output directory.
 
 ## Why This Is a Problem
 
@@ -16,9 +16,11 @@ When MSBuild runtime assemblies are copied to your application's output director
 2. **Missing SDKs and build logic**: The MSBuild assemblies in your output directory don't include the SDKs, targets, and build logic needed to build real projects
 3. **Inconsistent behavior**: Your application may behave differently than `MSBuild.exe`, `dotnet build`, or Visual Studio when evaluating projects
 
+Additionally, without `PrivateAssets="all"`, downstream projects that reference your project may still get these runtime assets transitively, causing the same issues in consuming projects.
+
 ## Example Runtime Error
 
-Without `ExcludeAssets="runtime"`, you may encounter errors like:
+Without the proper asset exclusions, you may encounter errors like:
 
 ```
 System.IO.FileNotFoundException: Could not load file or assembly 'Microsoft.Build, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' or one of its dependencies.
@@ -34,18 +36,19 @@ This happens because your application loads MSBuild assemblies from your bin fol
 
 ## Solution
 
-Add `ExcludeAssets="runtime"` to all MSBuild PackageReferences in your project file:
+Add `ExcludeAssets="runtime"` and `PrivateAssets="all"` to all MSBuild PackageReferences in your project file:
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="Microsoft.Build" ExcludeAssets="runtime" />
-  <PackageReference Include="Microsoft.Build.Framework" ExcludeAssets="runtime" />
-  <PackageReference Include="Microsoft.Build.Utilities.Core" ExcludeAssets="runtime" />
+  <PackageReference Include="Microsoft.Build" ExcludeAssets="runtime" PrivateAssets="all" />
+  <PackageReference Include="Microsoft.Build.Framework" ExcludeAssets="runtime" PrivateAssets="all" />
+  <PackageReference Include="Microsoft.Build.Utilities.Core" ExcludeAssets="runtime" PrivateAssets="all" />
   ...
 </ItemGroup>
 ```
 
-This tells NuGet to use these packages only for compilation, not at runtime. At runtime, MSBuildLocator will load MSBuild assemblies from the registered Visual Studio or .NET SDK installation.
+- `ExcludeAssets="runtime"` tells NuGet to use these packages only for compilation, not at runtime. At runtime, MSBuildLocator will load MSBuild assemblies from the registered Visual Studio or .NET SDK installation.
+- `PrivateAssets="all"` prevents the package reference metadata from flowing to downstream projects, ensuring that projects referencing your library don't inadvertently get runtime assets from these packages.
 
 ## Alternative: Disable the Check (Not Recommended)
 
