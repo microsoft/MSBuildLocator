@@ -50,6 +50,14 @@ Add `ExcludeAssets="runtime"` and `PrivateAssets="all"` to all MSBuild PackageRe
 - `ExcludeAssets="runtime"` tells NuGet to use these packages only for compilation, not at runtime. At runtime, MSBuildLocator will load MSBuild assemblies from the registered Visual Studio or .NET SDK installation.
 - `PrivateAssets="all"` prevents the package reference metadata from flowing to downstream projects, ensuring that projects referencing your library don't inadvertently get runtime assets from these packages.
 
+> [!NOTE]
+> Make sure that you don't add `ExcludeAssets` and `PrivateAssets` to the `Microsoft.Build.Locator` `PackageReference` itself - you need its run-time assets in order to use it!
+
+### What if I get errors for PackageReferences I don't have?
+
+It's possible that you may get `MSBL001` errors for packages that you don't directly reference - these packages are _transitive_ references, pulled in by other packages you _do_ reference.
+To solve this, you'll need to add new PackageReference items to your project and add the ExcludeAssets/PrivateAssets metadata onto them. In the future we hope to have the ability to 'flow' this metadata from a parent PackageReference to transitive PackageReferences so that you don't need to do this.
+
 ## Alternative: Disable the Check (Not Recommended)
 
 If you need to distribute MSBuild assemblies with your application (not recommended), you can disable this check by setting the following property in your project file:
