@@ -53,6 +53,14 @@ namespace Microsoft.Build.Locator
         public static bool AllowQueryAllRuntimeVersions { get; set; } = false;
 
         /// <summary>
+        ///     Allow discovery of .NET SDK versions from all discovered dotnet install locations.
+        /// </summary>
+        /// <remarks>
+        ///     Defaults to <see langword="false"/>. Set this to <see langword="true"/> only if you do not mind behaving differently than the dotnet muxer.
+        /// </remarks.
+        public static bool AllowQueryAllDotnetLocations { get; set; } = false;
+
+        /// <summary>
         ///     Gets a value indicating whether an instance of MSBuild can be registered.
         /// </summary>
         /// <remarks>
@@ -200,7 +208,7 @@ namespace Microsoft.Build.Locator
             {
                 if (string.IsNullOrWhiteSpace(msbuildSearchPaths[i]))
                 {
-                    nullOrWhiteSpaceExceptions.Add(new ArgumentException($"Value at position {i+1} may not be null or whitespace", nameof(msbuildSearchPaths)));
+                    nullOrWhiteSpaceExceptions.Add(new ArgumentException($"Value at position {i + 1} may not be null or whitespace", nameof(msbuildSearchPaths)));
                 }
             }
             if (nullOrWhiteSpaceExceptions.Count > 0)
@@ -266,7 +274,7 @@ namespace Microsoft.Build.Locator
 
             AppDomain.CurrentDomain.AssemblyResolve += s_registeredHandler;
 #else
-            s_registeredHandler = (_, assemblyName) => 
+            s_registeredHandler = (_, assemblyName) =>
             {
                 return TryLoadAssembly(assemblyName);
             };
@@ -377,7 +385,8 @@ namespace Microsoft.Build.Locator
 #if NETCOREAPP
             // AllowAllRuntimeVersions was added to VisualStudioInstanceQueryOptions for fulfilling Roslyn's needs. One of the properties will be removed in v2.0.
             bool allowAllRuntimeVersions = AllowQueryAllRuntimeVersions || options.AllowAllRuntimeVersions;
-            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory, allowAllRuntimeVersions))
+            bool allowAllDotnetLocations = AllowQueryAllDotnetLocations || options.AllowAllDotnetLocations;
+            foreach (var dotnetSdk in DotNetSdkLocationHelper.GetInstances(options.WorkingDirectory, allowAllRuntimeVersions, allowAllDotnetLocations))
                 yield return dotnetSdk;
 #endif
         }
@@ -404,7 +413,7 @@ namespace Microsoft.Build.Locator
                     Version.TryParse(versionString, out version);
                 }
 
-                if(version != null)
+                if (version != null)
                 {
                     return new VisualStudioInstance("DEVCONSOLE", path, version, DiscoveryType.DeveloperConsole);
                 }
