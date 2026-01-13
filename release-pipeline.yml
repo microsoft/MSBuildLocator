@@ -66,15 +66,13 @@ extends:
         - download: microsoft_MSBuildLocator
           displayName: 'Download NuGet Package Artifact'
           artifact: pkg
-        - task: NuGetCommand@2
+        - task: 1ES.PublishNuget@1
           displayName: 'NuGet push'
           inputs:
-            command: 'push'
+            packageParentPath: '$(Pipeline.Workspace)'
             packagesToPush: '$(Pipeline.Workspace)/microsoft_MSBuildLocator/pkg/Microsoft.Build.Locator*.nupkg'
             nuGetFeedType: 'external'
             publishFeedCredentials: 'MSBuild-Locator'
-            verbosityPush: 'Detailed'
-
       - job: PublicNuGetRelease
         displayName: 'Public NuGet release'
         dependsOn: PushToNuGet
