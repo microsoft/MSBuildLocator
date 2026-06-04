@@ -4,7 +4,7 @@ Small .NET library: locates an MSBuild install (Visual Studio or .NET SDK) and r
 
 ## Build / test (root `MSBuildLocator.sln`, .NET CLI)
 - `dotnet restore` / `dotnet build` (deterministic) / `dotnet test` / `dotnet pack --configuration Debug`
-- Single test: `dotnet test --filter "FullyQualifiedName~QueryInstanceTests"` or `--filter "Name=<Method>"`
+- Single test: `dotnet test --filter "FullyQualifiedName~QueryInstancesTests"` or `--filter "Name=<Method>"`
 - Tests: xUnit + Shouldly, in `src/MSBuildLocator.Tests`.
 - Versioning: Nerdbank.GitVersioning (`version.json`) → build/pack needs full git history (CI `fetch-depth: 0`).
 - PR validation: `.github/workflows/pull-request.yml` (`windows-latest`). Official builds: `azure-pipelines.yml` / `release-pipeline.yml`. Release steps: `Releasing_MSBuildLocator.md`.
@@ -16,7 +16,7 @@ Library: `net46` + `net8.0`. Tests: `net472` + `net8.0`. Non-trivial code forks 
 - Always check whether a change must be mirrored/excluded under these conditionals.
 
 ## Architecture (namespace `Microsoft.Build.Locator`)
-- `MSBuildLocator.cs` — entry point: `RegisterDefaults`, `RegisterInstance`, `RegisterMSBuildPath`, `QueryVisualStudioInstances`, `CanRegister`, handler register/unregister. Both TFM forks live here.
+- `MSBuildLocator.cs` — entry point: `RegisterDefaults`, `RegisterInstance`, `RegisterMSBuildPath`, `QueryVisualStudioInstances`, `CanRegister`, handler registration. Both TFM forks live here. `Unregister()` is kept only for back-compat and is a no-op (the resolver is never removed).
 - `DotNetSdkLocationHelper.cs` — `.NET SDK` discovery. `ResolveDotnetPathCandidates` builds an ordered preference list of dotnet locations, tried in order: `DOTNET_ROOT`(`(x86)` on 32-bit) → current process (if run from `dotnet`) → `DOTNET_HOST_PATH` → `DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR` → `PATH`.
 - `NativeMethods.cs` — `NETCOREAPP`-only `hostfxr` interop (`hostfxr_resolve_sdk2`, `hostfxr_get_available_sdks`) used by SDK discovery.
 - `VisualStudioLocationHelper.cs` — `net46`-only VS Setup (COM) discovery (VS 2017+).
