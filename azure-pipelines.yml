@@ -20,12 +20,12 @@ extends:
   template: azure-pipelines/MicroBuild.1ES.Official.yml@CustomPipelineTemplates
   parameters:
     pool:
-      name: VSEngSS-MicroBuild2022-1ES
+      name: VSEng-MicroBuildVSStable
       demands:
       - msbuild
     sdl:
       sourceAnalysisPool:
-        name: VSEngSS-MicroBuild2022-1ES
+        name: VSEng-MicroBuildVSStable
       policheck:
         enabled: true
       tsa:
