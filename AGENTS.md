@@ -13,16 +13,12 @@ The core `Microsoft.Build.Locator.dll` must have minimal dependencies—nothing 
 - Versioning: Nerdbank.GitVersioning. Use SemVer 2 and update `version.json` on breaking changes or feature additions.
 
 ## Multi-targeting (central constraint)
-Library: `net46` + `net8.0`. Tests: `net472` + `net8.0`. Non-trivial code forks per TFM — must compile/behave on both:
-- `#if NETCOREAPP` → `AssemblyLoadContext.Resolving`; `#else` (Framework) → `AppDomain.AssemblyResolve` (`ResolveEventHandler`). See `s_registeredHandler` in `MSBuildLocator.cs`.
-- `#if NET46` / `FEATURE_VISUALSTUDIOSETUP` (defined only for `net46` in csproj) gate VS Setup COM-interop discovery (`VisualStudioLocationHelper.cs`). `net8.0` does NO VS discovery — uses SDK path only.
-- Always check whether a change must be mirrored/excluded under these conditionals.
+Library: `net46` + `net8.0`. Tests: `net472` + `net8.0`. Non-trivial code forks per TFM via `#if NETCOREAPP`, `#if NET46`, and `FEATURE_VISUALSTUDIOSETUP` (defined only for `net46`). Always check whether a change must be mirrored or excluded across these conditionals; for what each fork actually does, load the `msbuild-loader-netcore` or `msbuild-loader-netframework` skill.
 
 ## Architecture (namespace `Microsoft.Build.Locator`)
 - `MSBuildLocator.cs` — entry point: `RegisterDefaults`, `RegisterInstance`, `RegisterMSBuildPath`, `QueryVisualStudioInstances`, `CanRegister`, handler registration. Both TFM forks live here. `Unregister()` is kept only for back-compat and is a no-op (the resolver is never removed).
-- `DotNetSdkLocationHelper.cs` — `.NET SDK` discovery. `ResolveDotnetPathCandidates` builds an ordered preference list of dotnet locations, tried in order: `DOTNET_ROOT`(`(x86)` on 32-bit) → current process (if run from `dotnet`) → `DOTNET_HOST_PATH` → `DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR` → `PATH`.
-- `NativeMethods.cs` — `NETCOREAPP`-only `hostfxr` interop (`hostfxr_resolve_sdk2`, `hostfxr_get_available_sdks`) used by SDK discovery.
-- `VisualStudioLocationHelper.cs` — `net46`-only VS Setup (COM) discovery (VS 2017+).
+- `DotNetSdkLocationHelper.cs`, `NativeMethods.cs` — `.NET SDK` discovery (hostfxr); see the `msbuild-loader-netcore` skill.
+- `VisualStudioLocationHelper.cs` — Visual Studio Setup (COM) discovery; see the `msbuild-loader-netframework` skill.
 - `VisualStudioInstance.cs`, `VisualStudioInstanceQueryOptions.cs`, `DiscoveryType.cs` — result/option types.
 - `Utils/SemanticVersion*.cs`, `VersionComparer.cs` — internal SemVer parse/compare to order instances.
 - Props/targets shipped from `src/MSBuildLocator/build/` (packed to `build/` + `buildTransitive/`). `EnsureMSBuildAssembliesNotCopied` emits error **MSBL001** when a consumer references `Microsoft.Build*` packages without `PrivateAssets="all"` / `ExcludeAssets="runtime"` (copying those assemblies locally breaks redirection). Keep the target's package list in sync with MSBuild's layout.
