@@ -7,3 +7,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily" # until we settle into a cadence
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
