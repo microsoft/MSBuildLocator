@@ -4,10 +4,9 @@ description: >-
   How MSBuildLocator loads MSBuild assemblies and discovers installs on .NET
   Framework (the net46 target / #if NET46 / non-NETCOREAPP branches in
   src/MSBuildLocator). Covers the AppDomain.AssemblyResolve handler, search-path
-  probing, the pre-17.1 MSBuild.exe x86/amd64 fix, and Developer Console + Visual
-  Studio Setup (COM) discovery. Use when editing or reviewing net46 loader,
-  registration, or VS-discovery code, or diagnosing assembly-resolution behavior
-  on .NET Framework hosts.
+  probing, and Developer Console + Visual Studio Setup (COM) discovery. Use when
+  editing or reviewing net46 loader, registration, or VS-discovery code, or
+  diagnosing assembly-resolution behavior on .NET Framework hosts.
 ---
 
 # .NET Framework (`net46`) MSBuild loader
