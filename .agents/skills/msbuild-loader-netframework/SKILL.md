@@ -21,8 +21,8 @@ and cross-cutting conventions, see `AGENTS.md`.
 - `s_registeredHandler` is a static `ResolveEventHandler`; `IsRegistered` is
   `s_registeredHandler != null`.
 - `RegisterMSBuildPathsInternally` stores the handler in the static field before
-  subscribing to `AppDomain.CurrentDomain.AssemblyResolve`; the static field
-  keeps the delegate alive so it persists.
+  subscribing to `AppDomain.CurrentDomain.AssemblyResolve`; the event subscription
+  keeps the delegate alive, while the field tracks registration state.
 - `AssemblyResolve` can fire repeatedly for the same assembly; results are cached
   in `loadedAssemblies` keyed by `AssemblyName.FullName`.
 - Resolution is explicitly not thread-safe; every cache lookup/load runs under
