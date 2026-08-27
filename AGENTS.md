@@ -21,7 +21,8 @@ Library: `net46` + `net8.0`. Tests: `net472` + `net8.0`. Non-trivial code forks 
 - `VisualStudioLocationHelper.cs` — `net46`-only VS Setup (COM) discovery (see `msbuild-loader-netframework`).
 - `VisualStudioInstance.cs`, `VisualStudioInstanceQueryOptions.cs`, `DiscoveryType.cs` — result/option types.
 - `Utils/SemanticVersion*.cs`, `VersionComparer.cs` — internal SemVer parse/compare to order instances.
-- Props/targets shipped from `src/MSBuildLocator/build/` (packed to `build/` + `buildTransitive/`). `EnsureMSBuildAssembliesNotCopied` emits error **MSBL001** when a consumer references `Microsoft.Build*` packages without `PrivateAssets="all"` / `ExcludeAssets="runtime"` (copying those assemblies locally breaks redirection). Keep the target's package list in sync with MSBuild's layout.
+- Props/targets ship from `src/MSBuildLocator/build/` to `build/` and `buildTransitive/`. Never ship MSBuild DLLs with an app: local copies load before Locator's handler. `EnsureMSBuildAssembliesNotCopied` reports **MSBL001**; fix the flagged `<PackageReference>` with `ExcludeAssets="runtime"` and `PrivateAssets="all"`.
+- Keep `EnsureMSBuildAssembliesNotCopied`'s hardcoded package list synchronized with MSBuild's redistributable assemblies so it catches new packages.
 
 ## Conventions
 - Contract-stable public API: csproj `EnablePackageValidation` + `PackageValidationBaselineVersion` (1.6.1). Intentional API changes require updating `src/MSBuildLocator/CompatibilitySuppressions.xml`.
