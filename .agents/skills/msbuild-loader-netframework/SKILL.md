@@ -47,10 +47,6 @@ and cross-cutting conventions, see `AGENTS.md`.
 ## What net46 does NOT do
 - No `AssemblyLoadContext`, `hostfxr`, or `.NET SDK` discovery — those are
   `#if NETCOREAPP` paths (see the `msbuild-loader-netcore` skill).
-- `ApplyDotNetSdkEnvironmentVariables(...)` exists in the file, but both
-  `RegisterMSBuildPath(...)` call sites that invoke it are `#if NETCOREAPP`. Do
-  not assume SDK env vars (`MSBUILD_EXE_PATH` to `MSBuild.dll`,
-  `MSBuildExtensionsPath`, `MSBuildSDKsPath`) are set on net46.
 
 ## Register-before-load contract
 - `CanRegister` is false once any strong-named `Microsoft.Build*` assembly in
