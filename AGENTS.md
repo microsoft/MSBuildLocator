@@ -22,7 +22,7 @@ When changing behavior documented by either skill, update the skill in the same 
 - `DotNetSdkLocationHelper.cs`, `NativeMethods.cs` — .NET SDK discovery (hostfxr); see `msbuild-loader-netcore`.
 - `VisualStudioLocationHelper.cs` — `net46`-only Visual Studio Setup discovery; see `msbuild-loader-netframework`.
 - `VisualStudioInstance.cs`, `VisualStudioInstanceQueryOptions.cs`, `DiscoveryType.cs` — result/option types.
-- `Utils/SemanticVersion*.cs`, `VersionComparer.cs` — internal SemVer parse/compare to order instances.
+- `Utils/SemanticVersion*.cs`, `VersionComparer.cs` — internal SemVer parse/compare that is an implementation detail of .NET SDK discovery.
 - Props/targets ship from `src/MSBuildLocator/build/` to `build/` and `buildTransitive/`. Never ship MSBuild DLLs with an app: local copies load before Locator's handler. `EnsureMSBuildAssembliesNotCopied` reports **MSBL001**; fix the flagged `<PackageReference>` with `ExcludeAssets="runtime"` and `PrivateAssets="all"`.
 - Keep `EnsureMSBuildAssembliesNotCopied`'s hardcoded package list synchronized with MSBuild's redistributable assemblies so it catches new packages.
 
