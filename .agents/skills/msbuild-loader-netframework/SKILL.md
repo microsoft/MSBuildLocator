@@ -34,13 +34,6 @@ and cross-cutting conventions, see `AGENTS.md`.
   `RegisterInstance(...)` as `instance.MSBuildPath` plus the VS NuGet path when
   it exists.
 
-## Pre-17.1 MSBuild.exe bitness fix
-- net46 reads `FileVersionInfo` from the first registered path containing
-  `MSBuild.exe`.
-- For versions `< 17.1`, set `MSBUILD_EXE_PATH` to drive MSBuild's own lookup.
-- If that pre-17.1 path ends in `\amd64`, strip the trailing folder and point
-  `MSBUILD_EXE_PATH` at the sibling x86 `MSBuild.exe`.
-
 ## Discovery sources (net46 only)
 - Developer command prompt: `GetDevConsoleInstance()` reads `VSINSTALLDIR`, then
   parses `VSCMD_VER` (trimming any suffix after `-`), then falls back to
