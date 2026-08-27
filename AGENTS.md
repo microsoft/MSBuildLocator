@@ -14,6 +14,8 @@ Library: `net46` + `net8.0`. Tests: `net472` + `net8.0`. Non-trivial code forks 
 - `msbuild-loader-netcore` — the `net8.0` / `#if NETCOREAPP` path (`AssemblyLoadContext.Resolving`, SDK discovery, hostfxr).
 - `msbuild-loader-netframework` — the `net46` path (`AppDomain.AssemblyResolve`, VS Setup COM discovery).
 
+When changing behavior documented by either skill, update the skill in the same change.
+
 ## Architecture (namespace `Microsoft.Build.Locator`)
 - `MSBuildLocator.cs` — entry point: `RegisterDefaults`, `RegisterInstance`, `RegisterMSBuildPath`, `QueryVisualStudioInstances`, `CanRegister`, handler register/unregister. Both TFM forks live here (see the loader skills).
 - `DotNetSdkLocationHelper.cs` — `.NET SDK` discovery (Core path; see `msbuild-loader-netcore`).
