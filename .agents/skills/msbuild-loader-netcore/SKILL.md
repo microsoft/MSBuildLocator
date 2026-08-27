@@ -16,6 +16,8 @@ Scope: `src/MSBuildLocator/MSBuildLocator.cs` `#if NETCOREAPP` branches, plus
 `DotNetSdkLocationHelper.cs` and `NativeMethods.cs`. For build/test and
 cross-cutting conventions, see `AGENTS.md`.
 
+No platform-specific code should be required for .NET SDK discovery.
+
 ## Assembly-resolution handler
 - `s_registeredHandler` is a static
   `Func<AssemblyLoadContext, AssemblyName, Assembly>`; registration hooks
