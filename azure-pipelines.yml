@@ -35,6 +35,7 @@ extends:
       jobs:
       - job: job
         templateContext:
+          outputParentDirectory: '$(Build.ArtifactStagingDirectory)'
           outputs:
           - output: pipelineArtifact
             displayName: 'Upload Symbols Artifact'
