@@ -16,7 +16,7 @@ Scope: `src/MSBuildLocator/MSBuildLocator.cs` `#if NETCOREAPP` branches, plus
 `DotNetSdkLocationHelper.cs` and `NativeMethods.cs`. For build/test and
 cross-cutting conventions, see `AGENTS.md`.
 
-SDK discovery is cross-platform, but executable names, hostfxr library loading, and symlink handling have OS-specific implementations.```
+SDK discovery is cross-platform, but executable names, hostfxr library loading, and symlink handling have OS-specific implementations.
 
 ## Assembly-resolution handler
 - `s_registeredHandler` is a static

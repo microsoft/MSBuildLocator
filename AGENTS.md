@@ -31,4 +31,4 @@ When changing behavior documented by either skill, update the skill in the same 
 - XML doc comments on public members; match existing style.
 - Strong-name signed (`key.snk`) — don't remove signing.
 - Build settings centralized in `Directory.Build.props` / `Directory.Solution.props` / `Directory.Build.rsp` — edit there, not per-project.
- - Register-before-load contract: callers must register via Locator BEFORE any core MSBuild assembly loads (`CanRegister` → false once loaded). Preserve this + the lazy-loading patterns protecting it when refactoring.```
+ - Register-before-load contract: callers must register via Locator BEFORE any core MSBuild assembly loads (`CanRegister` → false once loaded). Preserve this + the lazy-loading patterns protecting it when refactoring.
