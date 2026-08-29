@@ -102,7 +102,7 @@ extends:
           displayName: 'Copy NuGet to drop'
           inputs:
             SourceFolder: 'src\MSBuildLocator\bin\Release'
-            Contents: '*.nupkg'
+            Contents: '*.nupkg|*.snupkg'
             TargetFolder: '$(Build.ArtifactStagingDirectory)\pkg'
 
         - task: CopyFiles@2
