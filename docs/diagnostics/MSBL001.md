@@ -2,7 +2,7 @@
 
 ## Error Message
 
-> A PackageReference to the package '{PackageId}' at version '{Version}' is present in this project without ExcludeAssets="runtime" and PrivateAssets="all" set. This can cause errors at run-time due to MSBuild assembly-loading.
+> A PackageReference to the package '{PackageId}' at version '{Version}' is present in this project without ExcludeAssets="runtime" and PrivateAssets="runtime" set. This can cause errors at run-time due to MSBuild assembly-loading.
 
 ## Cause
 
@@ -16,7 +16,7 @@ When MSBuild runtime assemblies are copied to your application's output director
 2. **Missing SDKs and build logic**: The MSBuild assemblies in your output directory don't include the SDKs, targets, and build logic needed to build real projects
 3. **Inconsistent behavior**: Your application may behave differently than `MSBuild.exe`, `dotnet build`, or Visual Studio when evaluating projects
 
-Additionally, without `PrivateAssets="all"`, downstream projects that reference your project may still get these runtime assets transitively, causing the same issues in consuming projects.
+Additionally, without `PrivateAssets="runtime"`, downstream projects that reference your project may still get these runtime assets transitively, causing the same issues in consuming projects.
 
 ## Example Runtime Error
 
@@ -36,19 +36,19 @@ This happens because your application loads MSBuild assemblies from your bin fol
 
 ## Solution
 
-Add `ExcludeAssets="runtime"` and `PrivateAssets="all"` to all MSBuild PackageReferences in your project file:
+Add `ExcludeAssets="runtime"` and `PrivateAssets="runtime"` to all MSBuild PackageReferences in your project file:
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="Microsoft.Build" ExcludeAssets="runtime" PrivateAssets="all" />
-  <PackageReference Include="Microsoft.Build.Framework" ExcludeAssets="runtime" PrivateAssets="all" />
-  <PackageReference Include="Microsoft.Build.Utilities.Core" ExcludeAssets="runtime" PrivateAssets="all" />
+  <PackageReference Include="Microsoft.Build" ExcludeAssets="runtime" PrivateAssets="runtime" />
+  <PackageReference Include="Microsoft.Build.Framework" ExcludeAssets="runtime" PrivateAssets="runtime" />
+  <PackageReference Include="Microsoft.Build.Utilities.Core" ExcludeAssets="runtime" PrivateAssets="runtime" />
   ...
 </ItemGroup>
 ```
 
 - `ExcludeAssets="runtime"` tells NuGet to use these packages only for compilation, not at runtime. At runtime, MSBuildLocator will load MSBuild assemblies from the registered Visual Studio or .NET SDK installation.
-- `PrivateAssets="all"` prevents the package reference metadata from flowing to downstream projects, ensuring that projects referencing your library don't inadvertently get runtime assets from these packages.
+- `PrivateAssets="runtime"` prevents the runtime assets from flowing to downstream projects, ensuring that projects referencing your library don't inadvertently get runtime assets from these packages. Using `"runtime"` instead of `"all"` allows downstream projects to still reference the compile-time assemblies if needed.
 
 > [!NOTE]
 > Make sure that you don't add `ExcludeAssets` and `PrivateAssets` to the `Microsoft.Build.Locator` `PackageReference` itself - you need its run-time assets in order to use it!
