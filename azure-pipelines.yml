@@ -4,7 +4,7 @@ trigger:
 
 variables:
 - name: BuildPlatform
-  value: ''
+  value: 'x64'
 - name: BuildConfiguration
   value: 'Release'
 - name: TeamName
