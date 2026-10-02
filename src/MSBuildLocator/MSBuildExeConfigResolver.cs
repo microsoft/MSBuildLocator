@@ -31,13 +31,14 @@ namespace Microsoft.Build.Locator
                     continue;
                 }
 
+                msbuildExePath = Path.GetFullPath(msbuildExePath);
                 string executableDirectory = Path.GetDirectoryName(msbuildExePath);
                 if (string.Equals(Path.GetFileName(executableDirectory), "amd64", StringComparison.OrdinalIgnoreCase))
                 {
                     return msbuildExePath + ".config";
                 }
 
-                string amd64ConfigPath = Path.Combine(msbuildPath, "amd64", "MSBuild.exe.config");
+                string amd64ConfigPath = Path.Combine(executableDirectory, "amd64", "MSBuild.exe.config");
                 return File.Exists(amd64ConfigPath) ? amd64ConfigPath : msbuildExePath + ".config";
             }
 

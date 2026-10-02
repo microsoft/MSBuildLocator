@@ -16,6 +16,7 @@ namespace Microsoft.Build.Locator.Tests
     ///     registration against a Visual Studio-shaped layout, followed by real assembly loads. Each test runs
     ///     in its own child AppDomain because registration is permanent within an AppDomain.
     /// </summary>
+    [Collection(nameof(MSBuildAssemblyResolutionCollection))]
     public class MSBuildExeConfigAssemblyResolveTests
     {
         private const string MSBuildExePathVariable = "MSBUILD_EXE_PATH";
@@ -36,6 +37,41 @@ namespace Microsoft.Build.Locator.Tests
 
                 result.Succeeded.ShouldBeTrue(result.Error);
                 result.Location.ShouldBe(fixture, StringCompareShould.IgnoreCase);
+            });
+
+        [Theory]
+        [InlineData(@"MSBuild\Current\Bin", true)]
+        [InlineData(@"MSBuild\Current\Bin\amd64", true)]
+        [InlineData(@"MSBuild\Current\Bin", false)]
+        public void RelativeRegistrationResolvesCodeBasesAfterWorkingDirectoryChanges(string searchPath, bool useAmd64Config) =>
+            RunInChildAppDomain(nameof(RelativeRegistrationResolvesCodeBasesAfterWorkingDirectoryChanges), (install, runner) =>
+            {
+                const string name = "SacFixtureRelativePath";
+                string fixture = FixtureAssembly.Emit(install.SharedAssemblies, name, FixtureVersion);
+                string configPath = useAmd64Config
+                    ? install.WriteAmd64Config(CodeBaseEntry(name, fixture, $@"{FakeVisualStudioInstall.Amd64ToRoot}\SharedAssemblies\{name}.dll"))
+                    : install.WriteBinConfig(CodeBaseEntry(name, fixture, $@"..\..\..\SharedAssemblies\{name}.dll"));
+                string unrelatedDirectory = Path.Combine(install.Root, "Unrelated");
+                Directory.CreateDirectory(unrelatedDirectory);
+                string previousDirectory = Directory.GetCurrentDirectory();
+
+                try
+                {
+                    Directory.SetCurrentDirectory(install.Root);
+                    string selectedConfigPath = MSBuildExeConfigResolver.FindConfigFilePath(new[] { searchPath });
+                    runner.Register(new[] { searchPath }).ShouldBeNull();
+
+                    Directory.SetCurrentDirectory(unrelatedDirectory);
+                    AssemblyLoadResult result = runner.Load(FullName(name, fixture, FixtureVersion));
+
+                    result.Succeeded.ShouldBeTrue(result.Error);
+                    result.Location.ShouldBe(fixture, StringCompareShould.IgnoreCase);
+                    selectedConfigPath.ShouldBe(configPath, StringCompareShould.IgnoreCase);
+                }
+                finally
+                {
+                    Directory.SetCurrentDirectory(previousDirectory);
+                }
             });
 
         [Fact]
@@ -292,6 +328,12 @@ namespace Microsoft.Build.Locator.Tests
         /// </summary>
         private static string TestAssemblyDirectory => Path.GetDirectoryName(
             new Uri(typeof(MSBuildExeConfigAssemblyResolveTests).Assembly.CodeBase).LocalPath);
+    }
+
+    // Child AppDomains share the process working directory and environment variables.
+    [CollectionDefinition(nameof(MSBuildAssemblyResolutionCollection), DisableParallelization = true)]
+    public class MSBuildAssemblyResolutionCollection
+    {
     }
 }
 

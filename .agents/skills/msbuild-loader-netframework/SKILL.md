@@ -21,7 +21,9 @@ and cross-cutting conventions, see `AGENTS.md`.
   `s_registeredHandler != null`.
 - `RegisterMSBuildPathsInternally` parses an MSBuild configuration file (preferring
   `amd64\MSBuild.exe.config`, falling back to `MSBuild.exe.config` in the registered path).
-  The config policy is read once.
+  The config policy is read once. The selected config path is made absolute during
+  registration, so relative `codeBase` paths stay anchored to that config directory
+  even if the process working directory later changes.
 - `RegisterMSBuildPathsInternally` stores the handler in the static field before
   subscribing to `AppDomain.CurrentDomain.AssemblyResolve`; the event subscription
   keeps the delegate alive, while the field tracks registration state.
