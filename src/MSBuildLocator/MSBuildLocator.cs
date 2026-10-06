@@ -244,6 +244,10 @@ namespace Microsoft.Build.Locator
             var loadedAssemblies = new Dictionary<string, Assembly>();
 
 #if NET46
+            string msbuildExeConfigPath = MSBuildExeConfigResolver.FindConfigFilePath(msbuildSearchPaths);
+            AssemblyBindingPolicy bindingPolicy = MSBuildExeConfigReader.Read(msbuildExeConfigPath);
+            string bindingPolicyDirectory = msbuildExeConfigPath == null ? null : Path.GetDirectoryName(msbuildExeConfigPath);
+
             // MSBuild can be loaded from the x86 or x64 folder. Before 17.0, it looked next to the executing assembly in some cases and constructed a path that assumed x86 in others.
             // This overrides the latter assumption to let it find the right MSBuild.
             foreach (string path in msbuildSearchPaths)
@@ -289,10 +293,55 @@ namespace Microsoft.Build.Locator
                 // Assembly resolution is not thread-safe.
                 lock (loadedAssemblies)
                 {
-                    if (loadedAssemblies.TryGetValue(assemblyName.FullName, out Assembly assembly))
+                    if (!string.IsNullOrEmpty(assemblyName.FullName) &&
+                        loadedAssemblies.TryGetValue(assemblyName.FullName, out Assembly assembly))
                     {
                         return assembly;
                     }
+
+#if NET46
+                    foreach (AssemblyCodeBaseCandidate candidate in MSBuildExeConfigResolver.GetCodeBaseCandidates(
+                        assemblyName,
+                        bindingPolicy,
+                        bindingPolicyDirectory))
+                    {
+                        if (loadedAssemblies.TryGetValue(candidate.EffectiveAssemblyName.FullName, out assembly))
+                        {
+                            CacheAssembly(assemblyName, candidate.EffectiveAssemblyName, assembly);
+                            return assembly;
+                        }
+
+                        if (!File.Exists(candidate.Path))
+                        {
+                            continue;
+                        }
+
+                        try
+                        {
+                            AssemblyName targetAssemblyName = AssemblyName.GetAssemblyName(candidate.Path);
+                            if (!candidate.HasCompatibleIdentity(targetAssemblyName))
+                            {
+                                continue;
+                            }
+
+                            assembly = Assembly.LoadFrom(candidate.Path);
+                            CacheAssembly(assemblyName, candidate.EffectiveAssemblyName, assembly);
+                            return assembly;
+                        }
+                        catch (Exception e) when (
+                            e is IOException ||
+                            e is UnauthorizedAccessException ||
+                            e is System.Security.SecurityException ||
+                            e is ArgumentException ||
+                            e is NotSupportedException ||
+                            e is BadImageFormatException ||
+                            e is FileLoadException)
+                        {
+                            // A missing, invalid, or inaccessible code base must not prevent later candidates
+                            // or the legacy MSBuild-directory probing from resolving the request.
+                        }
+                    }
+#endif
 
                     // Look in the MSBuild folder for any unresolved reference. It may be a dependency
                     // of MSBuild or a task.
@@ -302,12 +351,27 @@ namespace Microsoft.Build.Locator
                         if (File.Exists(targetAssembly))
                         {
                             assembly = Assembly.LoadFrom(targetAssembly);
-                            loadedAssemblies.Add(assemblyName.FullName, assembly);
+                            CacheAssembly(assemblyName, null, assembly);
                             return assembly;
                         }
                     }
 
                     return null;
+                }
+            }
+
+            void CacheAssembly(AssemblyName originalRequest, AssemblyName effectiveAssemblyName, Assembly assembly)
+            {
+                CacheAssemblyName(originalRequest?.FullName, assembly);
+                CacheAssemblyName(effectiveAssemblyName?.FullName, assembly);
+                CacheAssemblyName(assembly.GetName().FullName, assembly);
+            }
+
+            void CacheAssemblyName(string assemblyName, Assembly assembly)
+            {
+                if (!string.IsNullOrEmpty(assemblyName) && !loadedAssemblies.ContainsKey(assemblyName))
+                {
+                    loadedAssemblies.Add(assemblyName, assembly);
                 }
             }
         }

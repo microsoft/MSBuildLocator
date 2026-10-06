@@ -23,6 +23,10 @@ MSBuildLocator.RegisterDefaults();
 //       the MSBuild assemblies are used in your application.
 //       The safest way to ensure this is to put any MSBuild API
 //       access into a separate method.
+// NOTE: on .NET Framework, registration honors the selected MSBuild
+//       deployment's executable config and codeBase policy. Because
+//       app-local assemblies load before AssemblyResolve can fire,
+//       they still take precedence.
 LoadProject();
 
 void LoadProject()
@@ -53,5 +57,4 @@ For complete documentation, see [Use Microsoft.Build.Locator](https://learn.micr
 
 See the [BuilderApp](https://github.com/microsoft/MSBuildLocator/blob/a349ee7ffd889cd7634d3fd8b413bf9f29244b50/samples/BuilderApp) sample for a full
 exploration of the MSBuildLocator library and capabilities.
-
 

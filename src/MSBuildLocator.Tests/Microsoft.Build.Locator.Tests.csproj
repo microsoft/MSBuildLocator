@@ -14,4 +14,8 @@
   <ItemGroup>
     <ProjectReference Include="..\MSBuildLocator\Microsoft.Build.Locator.csproj" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <!-- .NET Framework assembly resolution tests emit strong-named fixture assemblies at run time. -->
+    <None Include="$(AssemblyOriginatorKeyFile)" Link="key.snk" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
 </Project>

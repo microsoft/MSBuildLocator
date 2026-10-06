@@ -19,16 +19,39 @@ and cross-cutting conventions, see `AGENTS.md`.
 ## Assembly-resolution handler
 - `s_registeredHandler` is a static `ResolveEventHandler`; `IsRegistered` is
   `s_registeredHandler != null`.
+- `RegisterMSBuildPathsInternally` parses an MSBuild configuration file (preferring
+  `amd64\MSBuild.exe.config`, falling back to `MSBuild.exe.config` in the registered path).
+  The config policy is read once. The selected config path is made absolute during
+  registration, so relative `codeBase` paths stay anchored to that config directory
+  even if the process working directory later changes.
 - `RegisterMSBuildPathsInternally` stores the handler in the static field before
   subscribing to `AppDomain.CurrentDomain.AssemblyResolve`; the event subscription
   keeps the delegate alive, while the field tracks registration state.
 - `AssemblyResolve` can fire repeatedly for the same assembly; results are cached
-  in `loadedAssemblies` keyed by `AssemblyName.FullName`.
+  in `loadedAssemblies` under the original request's `AssemblyName.FullName`, the
+  effective identity for config candidates, and the loaded assembly's full identity.
 - Resolution is explicitly not thread-safe; every cache lookup/load runs under
   `lock (loadedAssemblies)`.
-- Handler path: parse `eventArgs.Name` with `new AssemblyName(eventArgs.Name)`;
-  for each registered search path, if `<msbuildPath>\<Name>.dll` exists, return
-  `Assembly.LoadFrom(targetAssembly)`.
+- Handler path: parse `eventArgs.Name` with `new AssemblyName(eventArgs.Name)`.
+  - Config-first ordering:
+    - Apply `qualifyAssembly` policy if the request has a partial name.
+    - Match name, token, and culture. Compare configured `processorArchitecture`
+      with the request when it specifies one; otherwise defer that check to the
+      candidate file's manifest.
+    - If a valid `<bindingRedirect>` applies, map to the `newVersion`.
+    - If a `<codeBase>` matches the effective version (whether redirected or standalone),
+      normalize its local path or `file://` URI, resolving relative paths against
+      the config directory.
+    - Inspect the candidate file's manifest with `AssemblyName.GetAssemblyName`
+      and compare its identity, including any required architecture, before
+      calling `Assembly.LoadFrom`. Cache the returned assembly; its identity
+      is not revalidated after loading.
+    - A missing/malformed config yields an empty policy without masking other failures.
+  - Fallback:
+    - If the config does not resolve the assembly or load fails (e.g. `FileNotFoundException`),
+      fall back to search-path probing (the old/custom layout behavior).
+    - For each registered search path, if `<msbuildPath>\<Name>.dll` exists, return
+      `Assembly.LoadFrom(targetAssembly)`.
 - Search paths come from `RegisterMSBuildPath(...)`, or from
   `RegisterInstance(...)` as `instance.MSBuildPath` plus the VS NuGet path when
   it exists.
