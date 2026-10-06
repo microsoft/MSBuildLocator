@@ -3,8 +3,6 @@ trigger:
   - release/*
 
 variables:
-- name: BuildPlatform
-  value: ''
 - name: BuildConfiguration
   value: 'Release'
 - name: TeamName
@@ -74,7 +72,7 @@ extends:
           displayName: '/t:Pack'
           inputs:
             solution: MSBuildLocator.sln
-            platform: '$(BuildPlatform)'
+            msbuildArchitecture: 'x64'
             configuration: '$(BuildConfiguration)'
             msbuildArguments: '/t:Pack /restore -binaryLogger:$(Build.SourcesDirectory)\Pack.binlog'
 
