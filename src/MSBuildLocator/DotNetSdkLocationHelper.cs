@@ -74,19 +74,8 @@ namespace Microsoft.Build.Locator
 
         public static IEnumerable<VisualStudioInstance> GetInstances(string workingDirectory, bool allowQueryAllRuntimes, bool allowAllDotnetLocations)
         {
-            string? bestSdkPath;
-            string[] allAvailableSdks;
-            try
-            {
-                AddUnmanagedDllResolver();
-
-                bestSdkPath = GetSdkFromGlobalSettings(workingDirectory);
-                allAvailableSdks = GetAllAvailableSDKs(allowAllDotnetLocations).ToArray();
-            }
-            finally
-            {
-                RemoveUnmanagedDllResolver();
-            }
+            string? bestSdkPath = GetSdkFromGlobalSettings(workingDirectory);
+            string[] allAvailableSdks = GetAllAvailableSDKs(allowAllDotnetLocations).ToArray();
 
             Dictionary<Version, VisualStudioInstance?> versionInstanceMap = new();
             foreach (var basePath in allAvailableSdks)
@@ -169,25 +158,16 @@ namespace Microsoft.Build.Locator
                     : resolvedSdk;
             }
         }
-
-        private static void AddUnmanagedDllResolver() => ModifyUnmanagedDllResolver(loadContext => loadContext.ResolvingUnmanagedDll += HostFxrResolver);
-
-        private static void RemoveUnmanagedDllResolver() => ModifyUnmanagedDllResolver(loadContext => loadContext.ResolvingUnmanagedDll -= HostFxrResolver);
-
-        private static void ModifyUnmanagedDllResolver(Action<AssemblyLoadContext> resolverAction)
+        static DotNetSdkLocationHelper()
         {
             // For Windows hostfxr is loaded in the process.
             if (!OperatingSystem.IsWindows())
             {
-                var loadContext = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
-                if (loadContext != null)
-                {
-                    resolverAction(loadContext);
-                }
+                NativeLibrary.SetDllImportResolver(typeof(NativeMethods).Assembly, HostFxrResolver);
             }
         }
 
-        private static IntPtr HostFxrResolver(Assembly assembly, string libraryName)
+        private static IntPtr HostFxrResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
             // the DllImport hardcoded the name as hostfxr.
             if (!libraryName.Equals(NativeMethods.HostFxrName, StringComparison.Ordinal))
@@ -214,7 +194,7 @@ namespace Microsoft.Build.Locator
                         ShouldIncludePredicate = static (ref FileSystemEntry entry) => entry.IsDirectory
                     };
 
-                    var orderedVersions = fileEnumerable.Where(v => v != null).Select(v => v!).OrderByDescending(f => f).ToList();
+                    var orderedVersions = fileEnumerable.Where(v => v != null).Select(v => v!).OrderDescending().ToList();
 
                     foreach (SemanticVersion hostFxrVersion in orderedVersions)
                     {
