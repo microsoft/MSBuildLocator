@@ -3,6 +3,7 @@
 
 #if NETCOREAPP
 
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,6 +12,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -23,7 +25,7 @@ namespace Microsoft.Build.Locator
         [GeneratedRegex(@"^(\d+)\.(\d+)\.(\d+)", RegexOptions.Multiline)]
         private static partial Regex VersionRegex();
 
-        private static string ExeName => OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet";
+        internal static string ExeName => OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet";
         private static readonly Lazy<List<string>> s_dotnetPathCandidates = new(() => ResolveDotnetPathCandidates());
 
         public static VisualStudioInstance? GetInstance(string dotNetSdkPath, bool allowQueryAllRuntimeVersions)
@@ -264,6 +266,7 @@ namespace Microsoft.Build.Locator
 
             AddIfValid(FindDotnetPathFromEnvVariable("DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR"));
             AddIfValid(GetDotnetPathFromPATH());
+            AddIfValid(GetGlobalInstallLocation());
 
             return pathCandidates.Count == 0
                 ? throw new InvalidOperationException("Path to dotnet executable is not set. " +
@@ -310,6 +313,48 @@ namespace Microsoft.Build.Locator
             }
 
             return dotnetPath;
+        }
+
+        /// <summary>
+        /// Reads the path to the .NET global install location, specified in
+        /// <see href="https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md"/>.
+        /// </summary>
+        internal static string? GetGlobalInstallLocation()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                using RegistryKey hklm32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
+                using RegistryKey? key = hklm32.OpenSubKey($@"SOFTWARE\dotnet\Setup\InstalledVersions\{RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant()}");
+                return key?.GetValue("InstallLocation")?.ToString();
+            }
+            else
+            {
+                // https://github.com/dotnet/runtime/blob/f942875639cf93fce159b0c1f66aba59b8b2d942/src/native/corehost/hostmisc/utils.cpp#L195-L238
+                string arch = RuntimeInformation.ProcessArchitecture switch
+                {
+                    Architecture.X86 => "x86",
+                    Architecture.X64 => "x64",
+                    Architecture.Arm => "arm",
+                    Architecture.Arm64 => "arm64",
+                    var x => x.ToString().ToLowerInvariant(),
+                };
+                string? path = ReadPathFromFileIfExists($"/etc/dotnet/install_location_{arch}");
+                // Check the generic file only if the architecture-specific files does not exist.
+                path ??= ReadPathFromFileIfExists("/etc/dotnet/install_location");
+                return path;
+            }
+        }
+
+        private static string? ReadPathFromFileIfExists(string path)
+        {
+            try
+            {
+                return File.ReadAllText(path).Trim();
+            }
+            catch (FileNotFoundException)
+            {
+                return null;
+            }
         }
 
         private static string? FindDotnetPathFromEnvVariable(string environmentVariable)
