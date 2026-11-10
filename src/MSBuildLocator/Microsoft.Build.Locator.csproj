@@ -25,7 +25,7 @@
     <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes" Version="15.0.36" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="MicroBuild.Core" Version="0.3.0" PrivateAssets="all" />
+    <PackageReference Include="MicroBuild.Core" Version="0.3.1" PrivateAssets="all" />
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="build\Microsoft.Build.Locator.props" Pack="true" PackagePath="build\" />
     <None Include="build\Microsoft.Build.Locator.targets" Pack="true" PackagePath="build\" />
